@@ -1,6 +1,8 @@
 package com.dalilmanbij.app
 
 import android.os.Bundle
+import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +52,19 @@ fun DalilApp() {
     var area by remember { mutableStateOf("كل المناطق") }
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
-    var saved by remember { mutableStateOf(setOf<String>()) }
+    val context = LocalContext.current
+    val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
+    var saved by remember {
+        mutableStateOf(savedPrefs.getStringSet("saved_titles", emptySet())?.toSet() ?: emptySet())
+    }
+
+    LaunchedEffect(saved) {
+        savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
+    }
+
+    BackHandler(enabled = detail != null || category != null) {
+        if (detail != null) detail = null else category = null
+    }
 
     val visible = demoItems.filter {
         (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true)) &&
@@ -102,6 +117,7 @@ private fun HomePage(
     onCategory: (String) -> Unit, onDetail: (DemoItem) -> Unit, onSave: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val visibleCategories = categories.filter { query.isBlank() || it.contains(query, ignoreCase = true) }
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(13.dp), contentPadding = PaddingValues(16.dp)) {
         item {
             Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = DarkGreen)) {
@@ -139,7 +155,8 @@ private fun HomePage(
             }
         }
         item { Heading("الأقسام", "اختَر القسم المناسب") }
-        items(categories) { name ->
+        if (visibleCategories.isEmpty()) item { EmptyBox("ما لقينا قسم مطابق", "جرّب كلمة بحث مختلفة.") }
+        items(visibleCategories) { name ->
             ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFF7F1F9))) {
                 Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Category, null, tint = Green)

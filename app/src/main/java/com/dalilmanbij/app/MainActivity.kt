@@ -131,7 +131,8 @@ fun DalilApp() {
                     Toast.makeText(context, "تم حفظ البلاغ على هذا الجهاز للتجربة فقط", Toast.LENGTH_LONG).show()
                     reportItem = null
                 })
-                selectedShop != null -> ShopProfilePage(selectedShop!!, onBack = { selectedShop = null }, onContact = { shop -> openShopWhatsApp(context, shop) }, modifier = Modifier.padding(padding))\n                detail != null -> DetailPage(
+                selectedShop != null -> ShopProfilePage(selectedShop!!, onBack = { selectedShop = null }, onContact = { shop -> openShopWhatsApp(context, shop) }, modifier = Modifier.padding(padding))
+                detail != null -> DetailPage(
                     detail!!,
                     saved.contains(detail!!.title),
                     { saved = if (saved.contains(detail!!.title)) saved - detail!!.title else saved + detail!!.title },

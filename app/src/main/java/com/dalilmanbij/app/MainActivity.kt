@@ -56,21 +56,26 @@ fun DalilApp() {
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
     var reportItem by remember { mutableStateOf<DemoItem?>(null) }
+    var showCreate by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
+    var userItems by remember { mutableStateOf(loadUserItems(savedPrefs)) }
     var saved by remember {
         mutableStateOf(savedPrefs.getStringSet("saved_titles", emptySet())?.toSet() ?: emptySet())
     }
+
+    LaunchedEffect(userItems) { saveUserItems(savedPrefs, userItems) }
 
     LaunchedEffect(saved) {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
     }
 
-    BackHandler(enabled = detail != null || category != null || reportItem != null) {
-        if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
+    BackHandler(enabled = detail != null || category != null || reportItem != null || showCreate) {
+        if (showCreate) showCreate = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
     }
 
-    val visible = demoItems.filter {
+    val allItems = demoItems + userItems
+    val visible = allItems.filter {
         (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true)) &&
         (category == null || it.category == category) &&
         (area == "كل المناطق" || it.area == area)
@@ -82,7 +87,7 @@ fun DalilApp() {
             topBar = {
                 CenterAlignedTopAppBar(
                     navigationIcon = {
-                        if (detail != null || category != null) IconButton(onClick = { if (detail != null) detail = null else category = null }) {
+                        if (detail != null || category != null || showCreate) IconButton(onClick = { if (showCreate) showCreate = false else if (detail != null) detail = null else category = null }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "رجوع")
                         }
                     },
@@ -103,6 +108,7 @@ fun DalilApp() {
             }
         ) { padding ->
             when {
+                showCreate -> CreateItemPage(onCancel = { showCreate = false }, onCreate = { item -> userItems = userItems + item; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, "تم حفظ الإعلان محلياً للتجربة فقط", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
                 reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
                     val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
                     val old = prefs.getString("local_reports", "").orEmpty()
@@ -122,8 +128,8 @@ fun DalilApp() {
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage({ tab = 0; category = it }, Modifier.padding(padding))
-                tab == 2 -> SavedPage(demoItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
-                else -> AccountPage(Modifier.padding(padding))
+                tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
+                else -> AccountPage(onCreate = { showCreate = true }, modifier = Modifier.padding(padding))
             }
         }
     }
@@ -230,7 +236,7 @@ private fun SavedPage(items: List<DemoItem>, onDetail: (DemoItem) -> Unit, onRem
 }
 
 @Composable
-private fun AccountPage(modifier: Modifier = Modifier) {
+private fun AccountPage(onCreate: () -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(16.dp)) {
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
@@ -242,7 +248,7 @@ private fun AccountPage(modifier: Modifier = Modifier) {
             }
         }
         item { AccountRow(Icons.Default.Campaign, "إعلاناتي", "ستُفعّل بعد بناء تسجيل الدخول") }
-        item { AccountRow(Icons.Default.AddCircle, "إضافة إعلان أو طلب", "سيتم تنفيذ النموذج وربطه لاحقاً") }
+        item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { AccountRow(Icons.Default.Settings, "الإعدادات", "إعدادات الحساب قيد التطوير") }
         item { Text("لا يوجد اتصال بالخادم في هذه النسخة التجريبية.", color = Muted, style = MaterialTheme.typography.bodySmall) }
     }
@@ -391,3 +397,39 @@ private fun ReportDialog(item: DemoItem, onDismiss: () -> Unit, onSubmit: (Strin
         dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } }
     )
 }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateItemPage(onCancel: () -> Unit, onCreate: (DemoItem) -> Unit, modifier: Modifier = Modifier) {
+    var title by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf(categories.first()) }
+    var area by remember { mutableStateOf("منبج") }
+    var details by remember { mutableStateOf("") }
+    var categoryExpanded by remember { mutableStateOf(false) }
+    var areaExpanded by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Heading("إضافة إعلان تجريبي", "لن يُنشر على الموقع ولن يراه مستخدمون آخرون") }
+        item { OutlinedTextField(value = title, onValueChange = { title = it; error = null }, label = { Text("عنوان الإعلان") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+        item {
+            ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = !categoryExpanded }) {
+                OutlinedTextField(value = category, onValueChange = {}, readOnly = true, label = { Text("القسم") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(categoryExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) { categories.forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { category = option; categoryExpanded = false }) } }
+            }
+        }
+        item {
+            ExposedDropdownMenuBox(expanded = areaExpanded, onExpandedChange = { areaExpanded = !areaExpanded }) {
+                OutlinedTextField(value = area, onValueChange = {}, readOnly = true, label = { Text("المنطقة") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(areaExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                ExposedDropdownMenu(expanded = areaExpanded, onDismissRequest = { areaExpanded = false }) { listOf("منبج", "ريف منبج").forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { area = option; areaExpanded = false }) } }
+            }
+        }
+        item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
+        if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim())) }, modifier = Modifier.fillMaxWidth()) { Text("حفظ الإعلان التجريبي") } }
+        item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
+    }
+}
+
+private fun loadUserItems(prefs: android.content.SharedPreferences): List<DemoItem> = prefs.getString("user_items_v1", "").orEmpty().lineSequence().filter { it.isNotBlank() }.mapNotNull { row -> val p = row.split("¦"); if (p.size == 4) DemoItem(p[0], p[1], p[2], p[3]) else null }.toList()
+private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<DemoItem>) { prefs.edit().putString("user_items_v1", items.joinToString("\n") { listOf(it.title, it.category, it.area, it.details).joinToString("¦") }).apply() }

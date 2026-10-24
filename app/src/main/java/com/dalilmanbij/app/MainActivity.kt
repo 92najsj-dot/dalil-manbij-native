@@ -175,9 +175,14 @@ fun DalilApp() {
                             val result = runCatching { createTestListing(item, authToken) }
                             android.os.Handler(android.os.Looper.getMainLooper()).post {
                                 result.onSuccess {
-                                    userItems = userItems + item
                                     Toast.makeText(context, "تم إرسال الإعلان لقاعدة الاختبار، وهو بانتظار المراجعة", Toast.LENGTH_LONG).show()
-                                    Thread { runCatching { fetchPublishedTestListings(authToken.ifBlank { null }) }.onSuccess { loaded -> android.os.Handler(android.os.Looper.getMainLooper()).post { remoteItems = loaded } } }.start()
+                                    Thread {
+                                        val refresh = runCatching { fetchPublishedTestListings(authToken.ifBlank { null }) }
+                                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                            refresh.onSuccess { loaded -> remoteItems = loaded }
+                                                .onFailure { backendStatus = "تم إرسال الإعلان، لكن تعذّر تحديث القائمة تلقائياً" }
+                                        }
+                                    }.start()
                                 }.onFailure { error ->
                                     Toast.makeText(context, "تعذر إرسال الإعلان: " + (error.message ?: "خطأ"), Toast.LENGTH_LONG).show()
                                 }

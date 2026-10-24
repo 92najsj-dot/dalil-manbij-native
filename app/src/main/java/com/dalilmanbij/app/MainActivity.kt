@@ -7,6 +7,8 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,7 +35,7 @@ private val Muted = Color(0xFF68776E)
 private val Mint = Color(0xFFE8F5ED)
 private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "طلبات", "عقارات", "سيارات", "أثاث منزلي")
 
-private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "")
+private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "", val imageUri: String = "")
 private data class DemoShop(val name: String, val category: String, val area: String, val description: String, val phone: String = "", val hours: String = "تُحدّد ساعات العمل من صاحب المحل", val verified: Boolean = false)
 private val demoShops = listOf(
     DemoShop("مثال: متجر ألبسة", "ملابس", "منبج", "صفحة محل توضيحية. هذه البيانات ليست لمتجر حقيقي."),
@@ -623,6 +626,14 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
     var price by remember(initialItem) { mutableStateOf(initialItem?.price.orEmpty()) }
     var currency by remember(initialItem) { mutableStateOf(initialItem?.currency ?: "ل.س") }
     var contact by remember(initialItem) { mutableStateOf(initialItem?.contact.orEmpty()) }
+    var imageUri by remember(initialItem) { mutableStateOf(initialItem?.imageUri.orEmpty()) }
+    val context = LocalContext.current
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            imageUri = uri.toString()
+        }
+    }
     var currencyExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
     var areaExpanded by remember { mutableStateOf(false) }
@@ -645,9 +656,20 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
         item { OutlinedTextField(value = price, onValueChange = { value -> price = value.filter { it.isDigit() || it == '.' || it == ',' }; error = null }, label = { Text("السعر (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item { ExposedDropdownMenuBox(expanded = currencyExpanded, onExpandedChange = { currencyExpanded = !currencyExpanded }) { OutlinedTextField(value = currency, onValueChange = {}, readOnly = true, label = { Text("العملة") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(currencyExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth()); ExposedDropdownMenu(expanded = currencyExpanded, onDismissRequest = { currencyExpanded = false }) { listOf("ل.س", "$").forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { currency = option; currencyExpanded = false }) } } } }
         item { OutlinedTextField(value = contact, onValueChange = { contact = it; error = null }, label = { Text("رقم التواصل (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+        item {
+            OutlinedButton(onClick = { imagePicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Image, null)
+                Spacer(Modifier.width(8.dp))
+                Text(if (imageUri.isBlank()) "اختيار صورة للإعلان" else "تغيير صورة الإعلان")
+            }
+            if (imageUri.isNotBlank()) {
+                AsyncImage(model = imageUri, contentDescription = "صورة الإعلان المختارة", modifier = Modifier.fillMaxWidth().height(190.dp))
+                TextButton(onClick = { imageUri = "" }) { Text("إزالة الصورة") }
+            }
+        }
         item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
         if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
-        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) { if (category == "طلبات") "حفظ الطلب التجريبي" else "حفظ الإعلان التجريبي" } else "حفظ التعديلات") } }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim(), imageUri)) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) { if (category == "طلبات") "حفظ الطلب التجريبي" else "حفظ الإعلان التجريبي" } else "حفظ التعديلات") } }
         item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
     }
 }
@@ -656,19 +678,20 @@ private fun loadUserItems(prefs: android.content.SharedPreferences): List<DemoIt
     prefs.getString("user_items_v1", "").orEmpty().lineSequence().filter { it.isNotBlank() }.mapNotNull { row ->
         runCatching {
             val p = row.split(".")
-            if (p.size != 4 && p.size != 7) null else {
+            if (p.size != 4 && p.size != 7 && p.size != 8) null else {
                 fun decode(index: Int) = String(Base64.decode(p[index], Base64.NO_WRAP), Charsets.UTF_8)
                 DemoItem(decode(0), decode(1), decode(2), decode(3),
-                    if (p.size == 7) decode(4) else "",
-                    if (p.size == 7) decode(5) else "ل.س",
-                    if (p.size == 7) decode(6) else "")
+                    if (p.size >= 7) decode(4) else "",
+                    if (p.size >= 7) decode(5) else "ل.س",
+                    if (p.size >= 7) decode(6) else "",
+                    if (p.size == 8) decode(7) else "")
             }
         }.getOrNull()
     }.toList()
 
 private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<DemoItem>) {
     val encoded = items.joinToString("\n") { item ->
-        listOf(item.title, item.category, item.area, item.details, item.price, item.currency, item.contact)
+        listOf(item.title, item.category, item.area, item.details, item.price, item.currency, item.contact, item.imageUri)
             .joinToString(".") { Base64.encodeToString(it.toByteArray(Charsets.UTF_8), Base64.NO_WRAP) }
     }
     prefs.edit().putString("user_items_v1", encoded).apply()

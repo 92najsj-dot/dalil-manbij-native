@@ -168,7 +168,27 @@ fun DalilApp() {
             }
         ) { padding ->
             when {
-                showCreate -> CreateItemPage(initialItem = editingItem, onCancel = { showCreate = false; editingItem = null }, onCreate = { item -> val oldItem = editingItem; userItems = if (oldItem == null) userItems + item else userItems.map { if (it == oldItem) item else it }; editingItem = null; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, if (oldItem == null) "تم حفظ الإعلان محلياً للتجربة فقط" else "تم تعديل الإعلان محلياً", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
+                showCreate -> CreateItemPage(initialItem = editingItem, onCancel = { showCreate = false; editingItem = null }, onCreate = { item ->
+                    val oldItem = editingItem
+                    if (authToken.isNotBlank() && oldItem == null) {
+                        Thread {
+                            val result = runCatching { createTestListing(item, authToken) }
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                result.onSuccess {
+                                    userItems = userItems + item
+                                    Toast.makeText(context, "تم إرسال الإعلان لقاعدة الاختبار، وهو بانتظار المراجعة", Toast.LENGTH_LONG).show()
+                                    Thread { runCatching { fetchPublishedTestListings() }.onSuccess { loaded -> android.os.Handler(android.os.Looper.getMainLooper()).post { remoteItems = loaded } } }.start()
+                                }.onFailure { error ->
+                                    Toast.makeText(context, "تعذر إرسال الإعلان: " + (error.message ?: "خطأ"), Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }.start()
+                    } else {
+                        userItems = if (oldItem == null) userItems + item else userItems.map { if (it == oldItem) item else it }
+                        Toast.makeText(context, if (oldItem == null) "تم حفظ الإعلان محلياً للتجربة فقط؛ سجّل الدخول لإرساله" else "تم تعديل الإعلان محلياً", Toast.LENGTH_LONG).show()
+                    }
+                    editingItem = null; tab = 0; category = null; query = ""; showCreate = false
+                }, modifier = Modifier.padding(padding))
                 showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onEdit = { item -> editingItem = item; showMyItems = false; showCreate = true }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\n") else "الحالة: تم البيع\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
                 reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
                     val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
@@ -671,6 +691,44 @@ private fun EmptyBox(title: String, subtitle: String) {
     }
 }
 
+
+
+private fun createTestListing(item: DemoItem, accessToken: String) {
+    val payload = accessToken.split(".").getOrNull(1) ?: throw IllegalStateException("جلسة الدخول غير صالحة")
+    val decoded = String(Base64.decode(payload, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING), Charsets.UTF_8)
+    val ownerId = JSONObject(decoded).optString("sub", "")
+    if (ownerId.isBlank()) throw IllegalStateException("تعذر تحديد حساب المستخدم")
+    val parts = item.area.split("•").map { it.trim() }.filter { it.isNotBlank() }
+    val price = item.price.replace(",", ".").toDoubleOrNull()
+    val currency = if (item.currency == "$") "USD" else "SYP"
+    val body = JSONObject()
+        .put("owner_id", ownerId)
+        .put("title", item.title)
+        .put("category", item.category)
+        .put("area", parts.firstOrNull() ?: "منبج")
+        .put("village", parts.drop(1).joinToString(" • "))
+        .put("details", item.details)
+        .put("price", price ?: JSONObject.NULL)
+        .put("currency", currency)
+        .put("contact", item.contact)
+        .put("image_urls", org.json.JSONArray())
+        .put("status", "pending")
+        .put("moderation_note", "")
+    val connection = (URL(BuildConfig.SUPABASE_URL + "/rest/v1/listings").openConnection() as HttpURLConnection)
+    connection.requestMethod = "POST"
+    connection.connectTimeout = 15000
+    connection.readTimeout = 15000
+    connection.doOutput = true
+    connection.setRequestProperty("Content-Type", "application/json")
+    connection.setRequestProperty("Prefer", "return=minimal")
+    connection.setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+    connection.setRequestProperty("Authorization", "Bearer " + accessToken)
+    OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
+    val code = connection.responseCode
+    val errorBody = if (code !in 200..299) (connection.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "") else ""
+    connection.disconnect()
+    if (code !in 200..299) throw IllegalStateException("رفضت قاعدة الاختبار الطلب ($code): " + errorBody.take(180))
+}
 
 private fun fetchPublishedTestListings(): List<DemoItem> {
     val connection = (URL(BuildConfig.SUPABASE_URL + "/rest/v1/listings?select=title,category,area,village,details,price,currency,contact,image_urls,status&status=eq.published&order=created_at.desc&limit=100").openConnection() as HttpURLConnection)

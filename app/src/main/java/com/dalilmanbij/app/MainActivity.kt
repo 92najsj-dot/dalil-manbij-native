@@ -79,6 +79,7 @@ fun DalilApp() {
     var saved by remember {
         mutableStateOf(savedPrefs.getStringSet("saved_titles", emptySet())?.toSet() ?: emptySet())
     }
+    var displayName by remember { mutableStateOf(savedPrefs.getString("local_display_name", "").orEmpty()) }
 
     LaunchedEffect(userItems) { saveUserItems(savedPrefs, userItems) }
 
@@ -159,7 +160,18 @@ fun DalilApp() {
                 tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
                 infoPage != null -> InfoPage(infoPage!!, onBack = { infoPage = null }, modifier = Modifier.padding(padding))
-                else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, onInfo = { infoPage = it }, modifier = Modifier.padding(padding))
+                else -> AccountPage(
+                    displayName = displayName,
+                    onDisplayNameChange = { name ->
+                        displayName = name.trim()
+                        savedPrefs.edit().putString("local_display_name", displayName).apply()
+                        Toast.makeText(context, "تم حفظ الاسم على هذا الجهاز فقط", Toast.LENGTH_SHORT).show()
+                    },
+                    onCreate = { showCreate = true },
+                    onMyItems = { showMyItems = true },
+                    onInfo = { infoPage = it },
+                    modifier = Modifier.padding(padding)
+                )
             }
         }
     }
@@ -325,14 +337,53 @@ private fun SavedPage(items: List<DemoItem>, onDetail: (DemoItem) -> Unit, onRem
 }
 
 @Composable
-private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, onInfo: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun AccountPage(
+    displayName: String,
+    onDisplayNameChange: (String) -> Unit,
+    onCreate: () -> Unit,
+    onMyItems: () -> Unit,
+    onInfo: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showNameDialog by remember { mutableStateOf(false) }
+    var nameDraft by remember(displayName) { mutableStateOf(displayName) }
+    if (showNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showNameDialog = false },
+            title = { Text("الاسم الظاهر") },
+            text = {
+                OutlinedTextField(
+                    value = nameDraft,
+                    onValueChange = { if (it.length <= 40) nameDraft = it },
+                    label = { Text("اسم اختياري") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDisplayNameChange(nameDraft)
+                    showNameDialog = false
+                }) { Text("حفظ") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNameDialog = false }) { Text("إلغاء") }
+            }
+        )
+    }
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(16.dp)) {
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
                 Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.AccountCircle, null, tint = Green, modifier = Modifier.size(60.dp))
                     Text("حسابي", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(displayName.ifBlank { "أضف اسماً ظاهراً (اختياري)" }, color = Muted)
                     Text("تسجيل الدخول وإدارة الإعلانات قيد التطوير.", color = Muted)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = { nameDraft = displayName; showNameDialog = true }) {
+                        Icon(Icons.Default.Edit, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (displayName.isBlank()) "إضافة اسم ظاهر" else "تعديل الاسم")
+                    }
                 }
             }
         }

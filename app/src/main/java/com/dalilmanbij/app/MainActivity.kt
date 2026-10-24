@@ -111,7 +111,7 @@ fun DalilApp() {
         ) { padding ->
             when {
                 showCreate -> CreateItemPage(onCancel = { showCreate = false }, onCreate = { item -> userItems = userItems + item; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, "تم حفظ الإعلان محلياً للتجربة فقط", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
-                showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\\n") else "الحالة: تم البيع\\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
+                showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\n") else "الحالة: تم البيع\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
                 reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
                     val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
                     val old = prefs.getString("local_reports", "").orEmpty()
@@ -476,7 +476,7 @@ private fun MyItemsPage(
                         if (item.details.startsWith("الحالة: تم البيع")) {
                             Text("تم البيع (محلي)", color = Color(0xFF176B50), fontWeight = FontWeight.Bold)
                         }
-                        Text(item.details.removePrefix("الحالة: تم البيع\\n"))
+                        Text(item.details.removePrefix("الحالة: تم البيع\n"))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = { onSold(item) }, modifier = Modifier.weight(1f)) {
                                 Text(if (item.details.startsWith("الحالة: تم البيع")) "إلغاء حالة البيع" else "تم البيع")

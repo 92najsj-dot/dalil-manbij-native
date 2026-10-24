@@ -30,7 +30,7 @@ private val DarkGreen = Color(0xFF123D30)
 private val Gold = Color(0xFFF4B45F)
 private val Muted = Color(0xFF68776E)
 private val Mint = Color(0xFFE8F5ED)
-private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "عقارات", "سيارات", "أثاث منزلي")
+private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "طلبات", "عقارات", "سيارات", "أثاث منزلي")
 
 private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "")
 private data class DemoShop(val name: String, val category: String, val area: String, val description: String, val phone: String = "", val hours: String = "تُحدّد ساعات العمل من صاحب المحل", val verified: Boolean = false)
@@ -512,7 +512,7 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
     var areaExpanded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Heading(if (initialItem == null) "إضافة إعلان تجريبي" else "تعديل إعلان تجريبي", "لن يُنشر على الموقع ولن يراه مستخدمون آخرون") }
+        item { Heading(if (initialItem == null) { if (category == "طلبات") "إضافة طلب تجريبي" else "إضافة إعلان تجريبي" } else { if (category == "طلبات") "تعديل طلب تجريبي" else "تعديل إعلان تجريبي" }, "لن يُنشر على الموقع ولن يراه مستخدمون آخرون") }
         item { OutlinedTextField(value = title, onValueChange = { title = it; error = null }, label = { Text("عنوان الإعلان") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item {
             ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = !categoryExpanded }) {
@@ -531,7 +531,7 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
         item { OutlinedTextField(value = contact, onValueChange = { contact = it; error = null }, label = { Text("رقم التواصل (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
         if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
-        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") } }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) { if (category == "طلبات") "حفظ الطلب التجريبي" else "حفظ الإعلان التجريبي" } else "حفظ التعديلات") } }
         item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
     }
 }

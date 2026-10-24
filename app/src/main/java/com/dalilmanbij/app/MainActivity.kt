@@ -59,6 +59,7 @@ fun DalilApp() {
     var reportItem by remember { mutableStateOf<DemoItem?>(null) }
     var showCreate by remember { mutableStateOf(false) }
     var showMyItems by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<DemoItem?>(null) }
     val context = LocalContext.current
     val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
     var userItems by remember { mutableStateOf(loadUserItems(savedPrefs)) }
@@ -110,8 +111,8 @@ fun DalilApp() {
             }
         ) { padding ->
             when {
-                showCreate -> CreateItemPage(onCancel = { showCreate = false }, onCreate = { item -> userItems = userItems + item; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, "تم حفظ الإعلان محلياً للتجربة فقط", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
-                showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\n") else "الحالة: تم البيع\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
+                showCreate -> CreateItemPage(initialItem = editingItem, onCancel = { showCreate = false; editingItem = null }, onCreate = { item -> val oldItem = editingItem; userItems = if (oldItem == null) userItems + item else userItems.map { if (it == oldItem) item else it }; editingItem = null; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, if (oldItem == null) "تم حفظ الإعلان محلياً للتجربة فقط" else "تم تعديل الإعلان محلياً", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
+                showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onEdit = { item -> editingItem = item; showMyItems = false; showCreate = true }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\n") else "الحالة: تم البيع\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
                 reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
                     val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
                     val old = prefs.getString("local_reports", "").orEmpty()
@@ -404,16 +405,16 @@ private fun ReportDialog(item: DemoItem, onDismiss: () -> Unit, onSubmit: (Strin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CreateItemPage(onCancel: () -> Unit, onCreate: (DemoItem) -> Unit, modifier: Modifier = Modifier) {
-    var title by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(categories.first()) }
-    var area by remember { mutableStateOf("منبج") }
-    var details by remember { mutableStateOf("") }
+private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, onCreate: (DemoItem) -> Unit, modifier: Modifier = Modifier) {
+    var title by remember(initialItem) { mutableStateOf(initialItem?.title.orEmpty()) }
+    var category by remember(initialItem) { mutableStateOf(initialItem?.category ?: categories.first()) }
+    var area by remember(initialItem) { mutableStateOf(initialItem?.area ?: "منبج") }
+    var details by remember(initialItem) { mutableStateOf(initialItem?.details?.removePrefix("الحالة: تم البيع\\n").orEmpty()) }
     var categoryExpanded by remember { mutableStateOf(false) }
     var areaExpanded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Heading("إضافة إعلان تجريبي", "لن يُنشر على الموقع ولن يراه مستخدمون آخرون") }
+        item { Heading(if (initialItem == null) "إضافة إعلان تجريبي" else "تعديل إعلان تجريبي", "لن يُنشر على الموقع ولن يراه مستخدمون آخرون") }
         item { OutlinedTextField(value = title, onValueChange = { title = it; error = null }, label = { Text("عنوان الإعلان") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item {
             ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = !categoryExpanded }) {
@@ -429,7 +430,7 @@ private fun CreateItemPage(onCancel: () -> Unit, onCreate: (DemoItem) -> Unit, m
         }
         item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
         if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
-        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim())) }, modifier = Modifier.fillMaxWidth()) { Text("حفظ الإعلان التجريبي") } }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") } }
         item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
     }
 }
@@ -459,6 +460,7 @@ private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<
 private fun MyItemsPage(
     userItems: List<DemoItem>,
     onBack: () -> Unit,
+    onEdit: (DemoItem) -> Unit,
     onDelete: (DemoItem) -> Unit,
     onSold: (DemoItem) -> Unit,
     modifier: Modifier = Modifier
@@ -478,6 +480,7 @@ private fun MyItemsPage(
                         }
                         Text(item.details.removePrefix("الحالة: تم البيع\n"))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { onEdit(item) }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.Edit, null); Spacer(Modifier.width(4.dp)); Text("تعديل") }
                             OutlinedButton(onClick = { onSold(item) }, modifier = Modifier.weight(1f)) {
                                 Text(if (item.details.startsWith("الحالة: تم البيع")) "إلغاء حالة البيع" else "تم البيع")
                             }

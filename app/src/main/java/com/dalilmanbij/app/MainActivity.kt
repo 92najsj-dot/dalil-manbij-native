@@ -2,6 +2,9 @@ package com.dalilmanbij.app
 
 import android.os.Bundle
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -52,6 +55,7 @@ fun DalilApp() {
     var area by remember { mutableStateOf("كل المناطق") }
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
+    var reportItem by remember { mutableStateOf<DemoItem?>(null) }
     val context = LocalContext.current
     val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
     var saved by remember {
@@ -62,8 +66,8 @@ fun DalilApp() {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
     }
 
-    BackHandler(enabled = detail != null || category != null) {
-        if (detail != null) detail = null else category = null
+    BackHandler(enabled = detail != null || category != null || reportItem != null) {
+        if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
     }
 
     val visible = demoItems.filter {
@@ -99,7 +103,22 @@ fun DalilApp() {
             }
         ) { padding ->
             when {
-                detail != null -> DetailPage(detail!!, saved.contains(detail!!.title), { saved = if (saved.contains(detail!!.title)) saved - detail!!.title else saved + detail!!.title }, Modifier.padding(padding))
+                reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
+                    val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
+                    val old = prefs.getString("local_reports", "").orEmpty()
+                    prefs.edit().putString("local_reports", old + "\n" + reportItem!!.title + " — " + reason).apply()
+                    Toast.makeText(context, "تم حفظ البلاغ على هذا الجهاز للتجربة فقط", Toast.LENGTH_LONG).show()
+                    reportItem = null
+                })
+                detail != null -> DetailPage(
+                    detail!!,
+                    saved.contains(detail!!.title),
+                    { saved = if (saved.contains(detail!!.title)) saved - detail!!.title else saved + detail!!.title },
+                    { shareItem(context, detail!!) },
+                    { openWhatsApp(context, detail!!) },
+                    { reportItem = detail },
+                    Modifier.padding(padding)
+                )
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage({ tab = 0; category = it }, Modifier.padding(padding))
@@ -264,7 +283,15 @@ private fun ItemCard(item: DemoItem, isSaved: Boolean, onOpen: () -> Unit, onSav
 }
 
 @Composable
-private fun DetailPage(item: DemoItem, isSaved: Boolean, onSave: () -> Unit, modifier: Modifier = Modifier) {
+private fun DetailPage(
+    item: DemoItem,
+    isSaved: Boolean,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
+    onWhatsApp: () -> Unit,
+    onReport: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Heading("تفاصيل العنصر", "معاينة تجريبية")
         Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
@@ -280,7 +307,22 @@ private fun DetailPage(item: DemoItem, isSaved: Boolean, onSave: () -> Unit, mod
                     Spacer(Modifier.width(8.dp))
                     Text(if (isSaved) "إزالة من المحفوظات" else "حفظ في المحفوظات")
                 }
-                Text("لا توجد بيانات حقيقية متصلة في هذه النسخة.", color = Muted, style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = onShare, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Share, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("مشاركة العنصر")
+                }
+                OutlinedButton(onClick = onWhatsApp, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Chat, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("مشاركة عبر واتساب")
+                }
+                TextButton(onClick = onReport, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Flag, null, tint = Color(0xFFB3261E))
+                    Spacer(Modifier.width(8.dp))
+                    Text("الإبلاغ عن العنصر", color = Color(0xFFB3261E))
+                }
+                Text("هذه نسخة تجريبية: البلاغ محلي ولا يصل إلى الإدارة.", color = Muted, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -304,4 +346,48 @@ private fun EmptyBox(title: String, subtitle: String) {
             Text(subtitle, color = Muted, style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+private fun shareItem(context: Context, item: DemoItem) {
+    val text = "${item.title}\nالقسم: ${item.category}\nالمنطقة: ${item.area}\n${item.details}\n— دليل منبج (نسخة تجريبية)"
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, item.title)
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "مشاركة عبر"))
+}
+
+private fun openWhatsApp(context: Context, item: DemoItem) {
+    val text = Uri.encode("${item.title} — ${item.category} — ${item.area}\n${item.details}\nمن دليل منبج")
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/?text=$text"))
+    try {
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        Toast.makeText(context, "تعذر فتح واتساب أو المتصفح", Toast.LENGTH_LONG).show()
+    }
+}
+
+@Composable
+private fun ReportDialog(item: DemoItem, onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
+    var reason by remember(item.title) { mutableStateOf("معلومات غير صحيحة") }
+    val reasons = listOf("معلومات غير صحيحة", "إعلان مكرر", "محتوى مخالف", "اشتباه احتيال", "سبب آخر")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("الإبلاغ عن العنصر") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(item.title, fontWeight = FontWeight.Bold)
+                reasons.forEach { option ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = reason == option, onClick = { reason = option })
+                        Text(option)
+                    }
+                }
+                Text("سيُحفظ البلاغ محلياً على الجهاز للتجربة فقط، ولن يصل للإدارة.", color = Muted, style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSubmit(reason) }) { Text("إرسال البلاغ التجريبي") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } }
+    )
 }

@@ -84,7 +84,7 @@ fun DalilApp() {
     val visible = allItems.filter {
         (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true)) &&
         (category == null || it.category == category) &&
-        (area == "كل المناطق" || it.area == area) && (filterCurrency == "الكل" || it.price.isBlank() || it.currency == filterCurrency) && (minPrice.isBlank() || (it.price.toDoubleOrNull() ?: 0.0) >= (minPrice.toDoubleOrNull() ?: 0.0)) && (maxPrice.isBlank() || (it.price.toDoubleOrNull() ?: Double.MAX_VALUE) <= (maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE))
+        (area == "كل المناطق" || it.area == area) && (filterCurrency == "الكل" || (it.price.isNotBlank() && it.currency == filterCurrency)) && (minPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price >= (minPrice.toDoubleOrNull() ?: 0.0) } ?: false)) && (maxPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price <= (maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE) } ?: false))
     }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = Gold, background = Color(0xFFF5F8F5))) {

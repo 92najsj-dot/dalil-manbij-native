@@ -417,6 +417,68 @@ private fun SavedPage(items: List<DemoItem>, onDetail: (DemoItem) -> Unit, onRem
     }
 }
 
+
+@Composable
+private fun AuthPage(
+    currentEmail: String,
+    onBack: () -> Unit,
+    onAuthSuccess: (String, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var email by remember { mutableStateOf(currentEmail) }
+    var password by remember { mutableStateOf("") }
+    var createAccount by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("هذه بيئة اختبار منفصلة عن الموقع الأساسي.") }
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Heading("حساب الاختبار", "تسجيل دخول حقيقي إلى قاعدة الاختبار") }
+        item { OutlinedTextField(value = email, onValueChange = { email = it.trim(); message = "" }, label = { Text("البريد الإلكتروني") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+        item { OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("كلمة المرور") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+        item { Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = !createAccount, onClick = { createAccount = false }); Text("تسجيل الدخول")
+            Spacer(Modifier.width(12.dp))
+            RadioButton(selected = createAccount, onClick = { createAccount = true }); Text("إنشاء حساب")
+        } }
+        item { Text(message, color = Muted, style = MaterialTheme.typography.bodySmall) }
+        item {
+            Button(enabled = !busy && email.contains("@") && password.length >= 6, modifier = Modifier.fillMaxWidth(), onClick = {
+                busy = true
+                message = "جارٍ الاتصال…"
+                Thread {
+                    val result = runCatching {
+                        val endpoint = if (createAccount) "/auth/v1/signup" else "/auth/v1/token?grant_type=password"
+                        val conn = URL(BuildConfig.SUPABASE_URL + endpoint).openConnection() as HttpURLConnection
+                        conn.requestMethod = "POST"; conn.connectTimeout = 15000; conn.readTimeout = 15000; conn.doOutput = true
+                        conn.setRequestProperty("Content-Type", "application/json")
+                        conn.setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+                        conn.setRequestProperty("Authorization", "Bearer " + BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+                        val body = JSONObject().put("email", email.trim()).put("password", password)
+                        OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
+                        val code = conn.responseCode
+                        val response = (if (code in 200..299) conn.inputStream else conn.errorStream).bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        conn.disconnect()
+                        val json = JSONObject(response.ifBlank { "{}" })
+                        if (code !in 200..299) throw IllegalStateException(json.optString("msg", json.optString("message", json.optString("error_description", "خطأ من الخادم (" + code + ")"))))
+                        val token = json.optString("access_token", "")
+                        if (token.isBlank()) "تم إنشاء الحساب. إن طُلب تأكيد البريد، أكّده ثم سجّل الدخول."
+                        else "AUTH_OK|" + email.trim() + "|" + token
+                    }.getOrElse { "تعذّر الاتصال: " + (it.message ?: "خطأ غير معروف") }
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        busy = false
+                        if (result.startsWith("AUTH_OK|")) {
+                            val parts = result.split("|", limit = 3)
+                            if (parts.size == 3) onAuthSuccess(parts[1], parts[2])
+                            message = "نجح تسجيل الدخول."
+                        } else message = result
+                    }
+                }.start()
+            }) { Text(if (busy) "يرجى الانتظار…" else if (createAccount) "إنشاء حساب اختبار" else "تسجيل الدخول") }
+        }
+        item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("رجوع") } }
+        item { Text("استخدم كلمة مرور جديدة مخصصة للاختبار، ولا تستخدم كلمة مرورك الشخصية.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
 @Composable
 private fun AccountPage(
     displayName: String,

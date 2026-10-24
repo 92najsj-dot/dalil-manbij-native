@@ -208,6 +208,21 @@ private fun HomePage(
             }
         }
         item {
+            Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3D9))) {
+                Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Campaign, contentDescription = null, tint = Color(0xFF9B6500), modifier = Modifier.size(34.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("العروض والإعلانات المميزة", fontWeight = FontWeight.ExtraBold, color = DarkGreen)
+                        Text("معاينة محلية فقط — لا توجد حملة أو دفعة حقيقية", color = Muted, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
+                        Text("تجريبي", color = Color(0xFF9B6500), modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+        item {
             OutlinedTextField(
                 value = query, onValueChange = onQuery, modifier = Modifier.fillMaxWidth(), singleLine = true,
                 shape = RoundedCornerShape(15.dp), placeholder = { Text("ابحث عن محل أو إعلان...") },

@@ -397,7 +397,7 @@ private fun ItemCard(item: DemoItem, isSaved: Boolean, onOpen: () -> Unit, onSav
                 }
                 Spacer(Modifier.height(6.dp))
             }
-            Text(item.details.removePrefix("الحالة: تم البيع\\n"), color = Muted, style = MaterialTheme.typography.bodyMedium)
+            Text(item.details.removePrefix("الحالة: تم البيع\n"), color = Muted, style = MaterialTheme.typography.bodyMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("بيانات تجريبية", color = Color(0xFF9B5A00), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                 TextButton(onClick = onOpen) { Text("التفاصيل") }
@@ -432,7 +432,7 @@ private fun DetailPage(
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-                Text(item.details.removePrefix("الحالة: تم البيع\\n"))
+                Text(item.details.removePrefix("الحالة: تم البيع\n"))
                 Spacer(Modifier.height(16.dp))
                 Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
                     Icon(if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null)
@@ -531,7 +531,7 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
     var title by remember(initialItem) { mutableStateOf(initialItem?.title.orEmpty()) }
     var category by remember(initialItem) { mutableStateOf(initialItem?.category ?: categories.first()) }
     var area by remember(initialItem) { mutableStateOf(initialItem?.area ?: "منبج") }
-    var details by remember(initialItem) { mutableStateOf(initialItem?.details?.removePrefix("الحالة: تم البيع\\n").orEmpty()) }
+    var details by remember(initialItem) { mutableStateOf(initialItem?.details?.removePrefix("الحالة: تم البيع\n").orEmpty()) }
     var price by remember(initialItem) { mutableStateOf(initialItem?.price.orEmpty()) }
     var currency by remember(initialItem) { mutableStateOf(initialItem?.currency ?: "ل.س") }
     var contact by remember(initialItem) { mutableStateOf(initialItem?.contact.orEmpty()) }

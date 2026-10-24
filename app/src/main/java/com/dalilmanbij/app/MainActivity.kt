@@ -390,7 +390,14 @@ private fun ItemCard(item: DemoItem, isSaved: Boolean, onOpen: () -> Unit, onSav
                 IconButton(onClick = onSave) { Icon(if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "حفظ", tint = if (isSaved) Color(0xFFB3261E) else Muted) }
             }
             Spacer(Modifier.height(8.dp))
-            Text(item.details, color = Muted, style = MaterialTheme.typography.bodyMedium)
+            val sold = item.details.startsWith("الحالة: تم البيع")
+            if (sold) {
+                Surface(color = Color(0xFFFFE9E6), shape = RoundedCornerShape(8.dp)) {
+                    Text("تم البيع", color = Color(0xFF9B2C20), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+            Text(item.details.removePrefix("الحالة: تم البيع\\n"), color = Muted, style = MaterialTheme.typography.bodyMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("بيانات تجريبية", color = Color(0xFF9B5A00), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                 TextButton(onClick = onOpen) { Text("التفاصيل") }
@@ -419,7 +426,13 @@ private fun DetailPage(
                 if (item.price.isNotBlank()) Text("السعر: ${item.price} ${item.currency}", color = Green, fontWeight = FontWeight.Bold)
                 if (item.contact.isNotBlank()) Text("للتواصل: ${item.contact}", color = Muted)
                 Spacer(Modifier.height(12.dp))
-                Text(item.details)
+                if (item.details.startsWith("الحالة: تم البيع")) {
+                    Surface(color = Color(0xFFFFE9E6), shape = RoundedCornerShape(8.dp)) {
+                        Text("تم البيع", color = Color(0xFF9B2C20), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                Text(item.details.removePrefix("الحالة: تم البيع\\n"))
                 Spacer(Modifier.height(16.dp))
                 Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
                     Icon(if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null)

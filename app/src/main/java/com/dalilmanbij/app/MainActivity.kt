@@ -101,7 +101,7 @@ fun DalilApp() {
 
     LaunchedEffect(userItems) { saveUserItems(savedPrefs, userItems) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(authToken) {
         Thread {
             val result = runCatching { fetchPublishedTestListings(authToken.ifBlank { null }) }
             android.os.Handler(android.os.Looper.getMainLooper()).post {

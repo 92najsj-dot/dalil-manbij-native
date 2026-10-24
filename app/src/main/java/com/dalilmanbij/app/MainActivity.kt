@@ -208,7 +208,7 @@ fun DalilApp() {
                     Modifier.padding(padding)
                 )
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
-                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, sortOrder, { sortOrder = it }, statusFilter, { statusFilter = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
+                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, sortOrder, { sortOrder = it }, statusFilter, { statusFilter = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, backendStatus, Modifier.padding(padding))
                 tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
                 infoPage == "تسجيل الدخول" -> AuthPage(
@@ -226,6 +226,7 @@ fun DalilApp() {
                 infoPage != null -> InfoPage(infoPage!!, onBack = { infoPage = null }, modifier = Modifier.padding(padding))
                 else -> AccountPage(
                     displayName = displayName,
+                    authEmail = authEmail,
                     onDisplayNameChange = { name ->
                         displayName = name.trim()
                         savedPrefs.edit().putString("local_display_name", displayName).apply()
@@ -245,7 +246,7 @@ fun DalilApp() {
 private fun HomePage(
     query: String, onQuery: (String) -> Unit, filters: Boolean, onToggleFilters: () -> Unit,
     area: String, onArea: (String) -> Unit, minPrice: String, onMinPrice: (String) -> Unit, maxPrice: String, onMaxPrice: (String) -> Unit, filterCurrency: String, onFilterCurrency: (String) -> Unit, sortOrder: String, onSortOrder: (String) -> Unit, statusFilter: String, onStatusFilter: (String) -> Unit, items: List<DemoItem>, saved: Set<String>,
-    onCategory: (String) -> Unit, onDetail: (DemoItem) -> Unit, onSave: (String) -> Unit,
+    onCategory: (String) -> Unit, onDetail: (DemoItem) -> Unit, onSave: (String) -> Unit, backendStatus: String,
     modifier: Modifier = Modifier
 ) {
     val visibleCategories = categories.filter { query.isBlank() || it.contains(query, ignoreCase = true) }
@@ -482,6 +483,7 @@ private fun AuthPage(
 @Composable
 private fun AccountPage(
     displayName: String,
+    authEmail: String,
     onDisplayNameChange: (String) -> Unit,
     onCreate: () -> Unit,
     onMyItems: () -> Unit,

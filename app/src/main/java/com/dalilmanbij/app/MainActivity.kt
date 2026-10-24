@@ -133,7 +133,7 @@ fun DalilApp() {
                     Modifier.padding(padding)
                 )
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
-                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
+                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage({ tab = 0; category = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
                 else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, modifier = Modifier.padding(padding))
@@ -145,7 +145,7 @@ fun DalilApp() {
 @Composable
 private fun HomePage(
     query: String, onQuery: (String) -> Unit, filters: Boolean, onToggleFilters: () -> Unit,
-    area: String, onArea: (String) -> Unit, items: List<DemoItem>, saved: Set<String>,
+    area: String, onArea: (String) -> Unit, minPrice: String, onMinPrice: (String) -> Unit, maxPrice: String, onMaxPrice: (String) -> Unit, filterCurrency: String, onFilterCurrency: (String) -> Unit, items: List<DemoItem>, saved: Set<String>,
     onCategory: (String) -> Unit, onDetail: (DemoItem) -> Unit, onSave: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -185,13 +185,13 @@ private fun HomePage(
                     Text("تصفية تجريبية على بيانات نموذجية فقط.", color = Muted, style = MaterialTheme.typography.bodySmall)
                     Text("السعر والعملة", fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = minPrice, onValueChange = { minPrice = it.filter { ch -> ch.isDigit() || ch == '.' } }, label = { Text("من") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = maxPrice, onValueChange = { maxPrice = it.filter { ch -> ch.isDigit() || ch == '.' } }, label = { Text("إلى") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = minPrice, onValueChange = { value -> onMinPrice(value.filter { ch -> ch.isDigit() || ch == '.' }) }, label = { Text("من") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = maxPrice, onValueChange = { value -> onMaxPrice(value.filter { ch -> ch.isDigit() || ch == '.' }) }, label = { Text("إلى") }, modifier = Modifier.weight(1f), singleLine = true)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(filterCurrency == "الكل", { filterCurrency = "الكل" }, { Text("كل العملات") })
-                        FilterChip(filterCurrency == "ل.س", { filterCurrency = "ل.س" }, { Text("ليرة سورية") })
-                        FilterChip(filterCurrency == "$", { filterCurrency = "$" }, { Text("دولار") })
+                        FilterChip(filterCurrency == "الكل", { onFilterCurrency("الكل") }, { Text("كل العملات") })
+                        FilterChip(filterCurrency == "ل.س", { onFilterCurrency("ل.س") }, { Text("ليرة سورية") })
+                        FilterChip(filterCurrency == "$", { onFilterCurrency("$") }, { Text("دولار") })
                     }
                 }
             }
@@ -453,7 +453,7 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
         item { OutlinedTextField(value = contact, onValueChange = { contact = it; error = null }, label = { Text("رقم التواصل (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
         if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
-        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") } }
         item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
     }
 }

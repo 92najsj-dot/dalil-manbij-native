@@ -103,7 +103,7 @@ fun DalilApp() {
 
     LaunchedEffect(Unit) {
         Thread {
-            val result = runCatching { fetchPublishedTestListings() }
+            val result = runCatching { fetchPublishedTestListings(authToken.ifBlank { null }) }
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 result.onSuccess { loaded ->
                     remoteItems = loaded
@@ -177,7 +177,7 @@ fun DalilApp() {
                                 result.onSuccess {
                                     userItems = userItems + item
                                     Toast.makeText(context, "تم إرسال الإعلان لقاعدة الاختبار، وهو بانتظار المراجعة", Toast.LENGTH_LONG).show()
-                                    Thread { runCatching { fetchPublishedTestListings() }.onSuccess { loaded -> android.os.Handler(android.os.Looper.getMainLooper()).post { remoteItems = loaded } } }.start()
+                                    Thread { runCatching { fetchPublishedTestListings(authToken.ifBlank { null }) }.onSuccess { loaded -> android.os.Handler(android.os.Looper.getMainLooper()).post { remoteItems = loaded } } }.start()
                                 }.onFailure { error ->
                                     Toast.makeText(context, "تعذر إرسال الإعلان: " + (error.message ?: "خطأ"), Toast.LENGTH_LONG).show()
                                 }
@@ -797,13 +797,13 @@ private fun createTestListing(item: DemoItem, accessToken: String) {
     if (code !in 200..299) throw IllegalStateException("رفضت قاعدة الاختبار الطلب ($code): " + errorBody.take(180))
 }
 
-private fun fetchPublishedTestListings(): List<DemoItem> {
-    val connection = (URL(BuildConfig.SUPABASE_URL + "/rest/v1/listings?select=title,category,area,village,details,price,currency,contact,image_urls,status&status=eq.published&order=created_at.desc&limit=100").openConnection() as HttpURLConnection)
+private fun fetchPublishedTestListings(accessToken: String? = null): List<DemoItem> {
+    val connection = (URL(BuildConfig.SUPABASE_URL + "/rest/v1/listings?select=title,category,area,village,details,price,currency,contact,image_urls,status&order=created_at.desc&limit=100").openConnection() as HttpURLConnection)
     connection.requestMethod = "GET"
     connection.connectTimeout = 15000
     connection.readTimeout = 15000
     connection.setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
-    connection.setRequestProperty("Authorization", "Bearer " + BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+    connection.setRequestProperty("Authorization", "Bearer " + (accessToken?.takeIf { it.isNotBlank() } ?: BuildConfig.SUPABASE_PUBLISHABLE_KEY))
     connection.setRequestProperty("Accept", "application/json")
     val code = connection.responseCode
     val body = (if (code in 200..299) connection.inputStream else connection.errorStream).bufferedReader(Charsets.UTF_8).use { it.readText() }
@@ -821,7 +821,7 @@ private fun fetchPublishedTestListings(): List<DemoItem> {
             title = title,
             category = row.optString("category", ""),
             area = listOf(row.optString("area", ""), row.optString("village", "")).filter { it.isNotBlank() }.distinct().joinToString(" • "),
-            details = row.optString("details", ""),
+            details = (if (row.optString("status", "published") != "published") "الحالة: بانتظار المراجعة\\n" else "") + row.optString("details", ""),
             price = if (row.isNull("price")) "" else row.optString("price", ""),
             currency = currency,
             contact = row.optString("contact", ""),

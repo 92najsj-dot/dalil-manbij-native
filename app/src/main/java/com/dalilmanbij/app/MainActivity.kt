@@ -470,6 +470,10 @@ private fun AccountRow(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
 private fun ItemCard(item: DemoItem, isSaved: Boolean, onOpen: () -> Unit, onSave: () -> Unit) {
     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
         Column(Modifier.fillMaxWidth().padding(15.dp)) {
+            if (item.imageUri.isNotBlank()) {
+                AsyncImage(model = item.imageUri, contentDescription = item.title, modifier = Modifier.fillMaxWidth().height(190.dp))
+                Spacer(Modifier.height(10.dp))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(color = Mint, shape = RoundedCornerShape(10.dp)) { Icon(Icons.Default.Storefront, null, tint = Green, modifier = Modifier.padding(12.dp).size(27.dp)) }
                 Spacer(Modifier.width(10.dp))
@@ -511,6 +515,10 @@ private fun DetailPage(
         Heading("تفاصيل العنصر", "معاينة تجريبية")
         Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
             Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                if (item.imageUri.isNotBlank()) {
+                    AsyncImage(model = item.imageUri, contentDescription = item.title, modifier = Modifier.fillMaxWidth().height(240.dp))
+                    Spacer(Modifier.height(12.dp))
+                }
                 Icon(Icons.Default.Storefront, null, tint = Green, modifier = Modifier.size(52.dp))
                 Text(item.title, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                 Text("${item.category} • ${item.area}", color = Muted)

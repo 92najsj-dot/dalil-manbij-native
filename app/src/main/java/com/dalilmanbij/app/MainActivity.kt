@@ -33,6 +33,12 @@ private val Mint = Color(0xFFE8F5ED)
 private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "عقارات", "سيارات", "أثاث منزلي")
 
 private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "")
+private data class DemoShop(val name: String, val category: String, val area: String, val description: String, val phone: String = "", val hours: String = "تُحدّد ساعات العمل من صاحب المحل", val verified: Boolean = false)
+private val demoShops = listOf(
+    DemoShop("مثال: متجر ألبسة", "ملابس", "منبج", "صفحة محل توضيحية. هذه البيانات ليست لمتجر حقيقي."),
+    DemoShop("مثال: صيانة أجهزة", "موبايلات وإلكترونيات", "منبج", "خدمات صيانة كمثال توضيحي فقط."),
+    DemoShop("مثال: مطعم محلي", "مطاعم ومقاهي", "ريف منبج", "صفحة مطعم توضيحية وليست قائمة منشآت حقيقية.")
+)
 private val demoItems = listOf(
     DemoItem("مثال: محل ألبسة في منبج", "ملابس", "منبج", "محتوى توضيحي فقط، وليس إعلاناً منشوراً."),
     DemoItem("مثال: صيانة موبايلات", "موبايلات وإلكترونيات", "منبج", "محتوى توضيحي فقط، وليس إعلاناً منشوراً."),
@@ -59,6 +65,7 @@ fun DalilApp() {
     var filterCurrency by remember { mutableStateOf("الكل") }
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
+    var selectedShop by remember { mutableStateOf<DemoShop?>(null) }
     var reportItem by remember { mutableStateOf<DemoItem?>(null) }
     var showCreate by remember { mutableStateOf(false) }
     var showMyItems by remember { mutableStateOf(false) }
@@ -76,7 +83,7 @@ fun DalilApp() {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
     }
 
-    BackHandler(enabled = detail != null || category != null || reportItem != null || showCreate || showMyItems) {
+    BackHandler(enabled = detail != null || selectedShop != null || category != null || reportItem != null || showCreate || showMyItems) {
         if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
     }
 
@@ -93,7 +100,7 @@ fun DalilApp() {
             topBar = {
                 CenterAlignedTopAppBar(
                     navigationIcon = {
-                        if (detail != null || category != null || showCreate || showMyItems) IconButton(onClick = { if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (detail != null) detail = null else category = null }) {
+                        if (detail != null || selectedShop != null || category != null || showCreate || showMyItems) IconButton(onClick = { if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else category = null }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "رجوع")
                         }
                     },
@@ -123,7 +130,7 @@ fun DalilApp() {
                     Toast.makeText(context, "تم حفظ البلاغ على هذا الجهاز للتجربة فقط", Toast.LENGTH_LONG).show()
                     reportItem = null
                 })
-                detail != null -> DetailPage(
+                selectedShop != null -> ShopProfilePage(selectedShop!!, onBack = { selectedShop = null }, onContact = { shop -> openShopWhatsApp(context, shop) }, modifier = Modifier.padding(padding))\n                detail != null -> DetailPage(
                     detail!!,
                     saved.contains(detail!!.title),
                     { saved = if (saved.contains(detail!!.title)) saved - detail!!.title else saved + detail!!.title },
@@ -134,7 +141,7 @@ fun DalilApp() {
                 )
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
-                tab == 1 -> ShopsPage({ tab = 0; category = it }, Modifier.padding(padding))
+                tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
                 else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, modifier = Modifier.padding(padding))
             }
@@ -226,20 +233,52 @@ private fun ResultsPage(category: String, items: List<DemoItem>, saved: Set<Stri
 }
 
 @Composable
-private fun ShopsPage(onCategory: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun ShopsPage(shops: List<DemoShop>, onOpen: (DemoShop) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(16.dp)) {
-        item { Heading("المحلات", "تصفح المحلات حسب النشاط") }
-        items(categories) { name ->
-            ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.fillMaxWidth()) {
+        item { Heading("المحلات", "صفحات محلات تجريبية — ليست بيانات حقيقية") }
+        items(shops) { shop ->
+            ElevatedCard(onClick = { onOpen(shop) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Storefront, null, tint = Green)
+                    Surface(color = Mint, shape = RoundedCornerShape(12.dp)) { Icon(Icons.Default.Storefront, null, tint = Green, modifier = Modifier.padding(12.dp).size(28.dp)) }
                     Spacer(Modifier.width(12.dp))
-                    Text(name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Column(Modifier.weight(1f)) {
+                        Text(shop.name, fontWeight = FontWeight.Bold)
+                        Text("${shop.category} • ${shop.area}", color = Muted, style = MaterialTheme.typography.bodySmall)
+                        if (shop.verified) Text("محل موثّق", color = Green, style = MaterialTheme.typography.labelSmall)
+                    }
                     Icon(Icons.Default.ChevronRight, null)
                 }
             }
         }
-        item { Text("قائمة المحلات الحقيقية ستظهر بعد ربط البيانات.", color = Muted) }
+        item { EmptyBox("بيانات توضيحية فقط", "ستظهر المحلات الفعلية عند ربط خلفية آمنة بالتطبيق.") }
+    }
+}
+
+@Composable
+private fun ShopProfilePage(shop: DemoShop, onBack: () -> Unit, onContact: (DemoShop) -> Unit, modifier: Modifier = Modifier) {
+    LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(16.dp)) {
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = DarkGreen), shape = RoundedCornerShape(22.dp)) {
+                Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Storefront, null, tint = Gold, modifier = Modifier.size(58.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Text(shop.name, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+                    Text("${shop.category} • ${shop.area}", color = Color.White)
+                    if (shop.verified) Text("✓ محل موثّق", color = Gold, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        item { Heading("نبذة عن المحل", "معلومات الصفحة") }
+        item { Card(colors = CardDefaults.cardColors(containerColor = Color.White)) { Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(shop.description)
+            HorizontalDivider()
+            Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AccessTime, null, tint = Green); Spacer(Modifier.width(8.dp)); Text(shop.hours) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.LocationOn, null, tint = Green); Spacer(Modifier.width(8.dp)); Text("المنطقة: ${shop.area}") }
+            Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Category, null, tint = Green); Spacer(Modifier.width(8.dp)); Text("النشاط: ${shop.category}") }
+        } } }
+        item { Button(onClick = { onContact(shop) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Chat, null); Spacer(Modifier.width(8.dp)); Text("التواصل عبر واتساب") } }
+        item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("العودة إلى المحلات") } }
+        item { Text("هذه صفحة توضيحية محلية. لا يوجد اتصال بصاحب محل حقيقي أو قاعدة بيانات.", color = Muted, style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -518,5 +557,16 @@ private fun MyItemsPage(
             }
         }
         item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("رجوع") } }
+    }
+}
+private fun openShopWhatsApp(context: Context, shop: DemoShop) {
+    if (shop.phone.isBlank()) {
+        Toast.makeText(context, "لا يوجد رقم تواصل لهذا المحل التجريبي", Toast.LENGTH_LONG).show()
+        return
+    }
+    val digits = shop.phone.filter { it.isDigit() }
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits"))
+    runCatching { context.startActivity(intent) }.onFailure {
+        Toast.makeText(context, "تعذر فتح واتساب أو المتصفح", Toast.LENGTH_LONG).show()
     }
 }

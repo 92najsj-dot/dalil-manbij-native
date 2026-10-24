@@ -1,6 +1,7 @@
 package com.dalilmanbij.app
 
 import android.os.Bundle
+import android.util.Base64
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -57,6 +58,7 @@ fun DalilApp() {
     var detail by remember { mutableStateOf<DemoItem?>(null) }
     var reportItem by remember { mutableStateOf<DemoItem?>(null) }
     var showCreate by remember { mutableStateOf(false) }
+    var showMyItems by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
     var userItems by remember { mutableStateOf(loadUserItems(savedPrefs)) }
@@ -70,8 +72,8 @@ fun DalilApp() {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
     }
 
-    BackHandler(enabled = detail != null || category != null || reportItem != null || showCreate) {
-        if (showCreate) showCreate = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
+    BackHandler(enabled = detail != null || category != null || reportItem != null || showCreate || showMyItems) {
+        if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else category = null
     }
 
     val allItems = demoItems + userItems
@@ -87,7 +89,7 @@ fun DalilApp() {
             topBar = {
                 CenterAlignedTopAppBar(
                     navigationIcon = {
-                        if (detail != null || category != null || showCreate) IconButton(onClick = { if (showCreate) showCreate = false else if (detail != null) detail = null else category = null }) {
+                        if (detail != null || category != null || showCreate || showMyItems) IconButton(onClick = { if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (detail != null) detail = null else category = null }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "رجوع")
                         }
                     },
@@ -109,6 +111,7 @@ fun DalilApp() {
         ) { padding ->
             when {
                 showCreate -> CreateItemPage(onCancel = { showCreate = false }, onCreate = { item -> userItems = userItems + item; tab = 0; category = null; query = ""; showCreate = false; Toast.makeText(context, "تم حفظ الإعلان محلياً للتجربة فقط", Toast.LENGTH_LONG).show() }, modifier = Modifier.padding(padding))
+                showMyItems -> MyItemsPage(userItems = userItems, onBack = { showMyItems = false }, onDelete = { item -> userItems = userItems.filterNot { it == item }; saved = saved - item.title; Toast.makeText(context, "حُذف الإعلان من هذا الجهاز فقط", Toast.LENGTH_SHORT).show() }, onSold = { item -> userItems = userItems.map { if (it == item) it.copy(details = if (it.details.startsWith("الحالة: تم البيع")) it.details.removePrefix("الحالة: تم البيع\\n") else "الحالة: تم البيع\\n" + it.details) else it }; Toast.makeText(context, "تم تحديث الحالة محلياً", Toast.LENGTH_SHORT).show() }, modifier = Modifier.padding(padding))
                 reportItem != null -> ReportDialog(reportItem!!, { reportItem = null }, { reason ->
                     val prefs = context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE)
                     val old = prefs.getString("local_reports", "").orEmpty()
@@ -129,7 +132,7 @@ fun DalilApp() {
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage({ tab = 0; category = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
-                else -> AccountPage(onCreate = { showCreate = true }, modifier = Modifier.padding(padding))
+                else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, modifier = Modifier.padding(padding))
             }
         }
     }
@@ -236,7 +239,7 @@ private fun SavedPage(items: List<DemoItem>, onDetail: (DemoItem) -> Unit, onRem
 }
 
 @Composable
-private fun AccountPage(onCreate: () -> Unit, modifier: Modifier = Modifier) {
+private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(16.dp)) {
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
@@ -247,7 +250,7 @@ private fun AccountPage(onCreate: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
         }
-        item { AccountRow(Icons.Default.Campaign, "إعلاناتي", "ستُفعّل بعد بناء تسجيل الدخول") }
+        item { ElevatedCard(onClick = onMyItems, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Campaign, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إعلاناتي التجريبية", fontWeight = FontWeight.Bold); Text("عرض وحذف وتغيير حالة إعلانات هذا الجهاز", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { AccountRow(Icons.Default.Settings, "الإعدادات", "إعدادات الحساب قيد التطوير") }
         item { Text("لا يوجد اتصال بالخادم في هذه النسخة التجريبية.", color = Muted, style = MaterialTheme.typography.bodySmall) }
@@ -431,5 +434,63 @@ private fun CreateItemPage(onCancel: () -> Unit, onCreate: (DemoItem) -> Unit, m
     }
 }
 
-private fun loadUserItems(prefs: android.content.SharedPreferences): List<DemoItem> = prefs.getString("user_items_v1", "").orEmpty().lineSequence().filter { it.isNotBlank() }.mapNotNull { row -> val p = row.split("¦"); if (p.size == 4) DemoItem(p[0], p[1], p[2], p[3]) else null }.toList()
-private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<DemoItem>) { prefs.edit().putString("user_items_v1", items.joinToString("\n") { listOf(it.title, it.category, it.area, it.details).joinToString("¦") }).apply() }
+private fun loadUserItems(prefs: android.content.SharedPreferences): List<DemoItem> =
+    prefs.getString("user_items_v1", "").orEmpty().lineSequence().filter { it.isNotBlank() }.mapNotNull { row ->
+        runCatching {
+            val p = row.split(".")
+            if (p.size != 4) null else DemoItem(
+                String(Base64.decode(p[0], Base64.NO_WRAP), Charsets.UTF_8),
+                String(Base64.decode(p[1], Base64.NO_WRAP), Charsets.UTF_8),
+                String(Base64.decode(p[2], Base64.NO_WRAP), Charsets.UTF_8),
+                String(Base64.decode(p[3], Base64.NO_WRAP), Charsets.UTF_8)
+            )
+        }.getOrNull()
+    }.toList()
+
+private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<DemoItem>) {
+    val encoded = items.joinToString("\n") { item ->
+        listOf(item.title, item.category, item.area, item.details)
+            .joinToString(".") { Base64.encodeToString(it.toByteArray(Charsets.UTF_8), Base64.NO_WRAP) }
+    }
+    prefs.edit().putString("user_items_v1", encoded).apply()
+}
+
+@Composable
+private fun MyItemsPage(
+    userItems: List<DemoItem>,
+    onBack: () -> Unit,
+    onDelete: (DemoItem) -> Unit,
+    onSold: (DemoItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Heading("إعلاناتي التجريبية", "هذه الإعلانات محفوظة على جهازك فقط ولا تظهر للناس") }
+        if (userItems.isEmpty()) {
+            item { EmptyBox("لا توجد إعلانات أضفتها", "ارجع إلى حسابي واضغط «إضافة إعلان تجريبي».") }
+        } else {
+            items(userItems) { item ->
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(item.title, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("${item.category} • ${item.area}", color = Muted, style = MaterialTheme.typography.bodySmall)
+                        if (item.details.startsWith("الحالة: تم البيع")) {
+                            Text("تم البيع (محلي)", color = Color(0xFF176B50), fontWeight = FontWeight.Bold)
+                        }
+                        Text(item.details.removePrefix("الحالة: تم البيع\\n"))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { onSold(item) }, modifier = Modifier.weight(1f)) {
+                                Text(if (item.details.startsWith("الحالة: تم البيع")) "إلغاء حالة البيع" else "تم البيع")
+                            }
+                            OutlinedButton(onClick = { onDelete(item) }, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Default.Delete, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("حذف")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("رجوع") } }
+    }
+}

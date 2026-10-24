@@ -54,6 +54,9 @@ fun DalilApp() {
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf<String?>(null) }
     var area by remember { mutableStateOf("كل المناطق") }
+    var minPrice by remember { mutableStateOf("") }
+    var maxPrice by remember { mutableStateOf("") }
+    var filterCurrency by remember { mutableStateOf("الكل") }
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
     var reportItem by remember { mutableStateOf<DemoItem?>(null) }
@@ -81,7 +84,7 @@ fun DalilApp() {
     val visible = allItems.filter {
         (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true)) &&
         (category == null || it.category == category) &&
-        (area == "كل المناطق" || it.area == area)
+        (area == "كل المناطق" || it.area == area) && (filterCurrency == "الكل" || it.price.isBlank() || it.currency == filterCurrency) && (minPrice.isBlank() || (it.price.toDoubleOrNull() ?: 0.0) >= (minPrice.toDoubleOrNull() ?: 0.0)) && (maxPrice.isBlank() || (it.price.toDoubleOrNull() ?: Double.MAX_VALUE) <= (maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE))
     }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = Gold, background = Color(0xFFF5F8F5))) {
@@ -180,6 +183,16 @@ private fun HomePage(
                         FilterChip(area == "ريف منبج", { onArea("ريف منبج") }, { Text("ريف منبج") })
                     }
                     Text("تصفية تجريبية على بيانات نموذجية فقط.", color = Muted, style = MaterialTheme.typography.bodySmall)
+                    Text("السعر والعملة", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = minPrice, onValueChange = { minPrice = it.filter { ch -> ch.isDigit() || ch == '.' } }, label = { Text("من") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = maxPrice, onValueChange = { maxPrice = it.filter { ch -> ch.isDigit() || ch == '.' } }, label = { Text("إلى") }, modifier = Modifier.weight(1f), singleLine = true)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(filterCurrency == "الكل", { filterCurrency = "الكل" }, { Text("كل العملات") })
+                        FilterChip(filterCurrency == "ل.س", { filterCurrency = "ل.س" }, { Text("ليرة سورية") })
+                        FilterChip(filterCurrency == "$", { filterCurrency = "$" }, { Text("دولار") })
+                    }
                 }
             }
         }

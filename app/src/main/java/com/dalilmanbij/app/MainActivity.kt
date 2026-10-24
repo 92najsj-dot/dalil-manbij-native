@@ -399,8 +399,14 @@ private fun AccountPage(
         }
         item { ElevatedCard(onClick = onMyItems, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Campaign, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إعلاناتي التجريبية", fontWeight = FontWeight.Bold); Text("عرض وحذف وتغيير حالة إعلانات هذا الجهاز", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
-        item { ElevatedCard(onClick = { onInfo("الإشعارات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Notifications, "الإشعارات", "حالة الإشعارات في النسخة التجريبية") } }
-        item { ElevatedCard(onClick = { onInfo("الترويج") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Star, "ترويج الإعلانات", "معاينة آلية الترويج دون دفع أو نشر فعلي") } }
+        item { ElevatedCard(onClick = { onInfo("تسجيل الدخول") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Login, "تسجيل الدخول / إنشاء حساب", "واجهة توضيحية؛ الحسابات غير مفعّلة في هذه النسخة") } }
+        item { ElevatedCard(onClick = { onInfo("الملف الشخصي") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Person, "الملف الشخصي والاسم الظاهر", "معاينة إعدادات الملف الشخصي والصفحة العامة") } }
+        item { ElevatedCard(onClick = { onInfo("الطلبات والخدمات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Handyman, "الطلبات والخدمات", "تصفحها من الأقسام الرئيسية؛ البيانات محلية تجريبية") } }
+        item { ElevatedCard(onClick = { onInfo("التحقق من المحل") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Verified, "طلب توثيق محل", "معاينة متطلبات التوثيق دون إرسال طلب حقيقي") } }
+        item { ElevatedCard(onClick = { onInfo("الإشعارات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Notifications, "الإشعارات", "سجل توضيحي؛ لا توجد إشعارات خادمية حقيقية") } }
+        item { ElevatedCard(onClick = { onInfo("الترويج") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Star, "ترويج الإعلانات", "معاينة الباقات والمدة والأولوية دون دفع") } }
+        item { ElevatedCard(onClick = { onInfo("العروض والبانرات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Campaign, "العروض والبانرات", "معاينة واجهة الحملات الإعلانية؛ الإدارة غير متصلة") } }
+        item { ElevatedCard(onClick = { onInfo("لوحة الإدارة") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.AdminPanelSettings, "لوحة الإدارة (معاينة)", "أدوات مراجعة وحظر وإحصاءات تجريبية فقط") } }
         item { ElevatedCard(onClick = { onInfo("عن التطبيق") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Info, "عن دليل منبج", "فكرة التطبيق ومعلومات النسخة") } }
         item { ElevatedCard(onClick = { onInfo("الخصوصية") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Security, "سياسة الخصوصية", "كيف تتعامل النسخة التجريبية مع البيانات") } }
         item { ElevatedCard(onClick = { onInfo("الشروط") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Description, "الشروط والأحكام", "حدود استخدام النسخة التجريبية") } }
@@ -424,6 +430,41 @@ private fun InfoPage(page: String, onBack: () -> Unit, modifier: Modifier = Modi
             "لا تُدخل كلمات مرور أو معلومات مالية أو بيانات شخصية حساسة في هذه النسخة.",
             "حذف التطبيق أو بياناته من إعدادات Android قد يؤدي إلى حذف البيانات المحلية."
         )
+        "تسجيل الدخول" -> listOf(
+            "تسجيل الدخول وإنشاء حساب — معاينة",
+            "الموقع الأصلي يدعم حسابات المستخدمين؛ هذه النسخة لا تتصل بمزود المصادقة ولا تنشئ حسابات حقيقية.",
+            "تسجيل الدخول بالبريد وكلمة المرور، استعادة كلمة المرور، وتسجيل الدخول الاجتماعي غير مفعّلة.",
+            "لا تدخل كلمة مرورك الحقيقية هنا. يلزم إعداد خلفية اختبار ومصادقة آمنة قبل تفعيلها."
+        )
+        "الملف الشخصي" -> listOf(
+            "الملف الشخصي والصفحة العامة — معاينة",
+            "يمكن حفظ الاسم الظاهر محلياً من شاشة حسابي.",
+            "الملفات العامة، صورة الحساب، وتعديل الملف المتزامن بين الأجهزة غير متاحة حالياً لأنها تحتاج حساباً وخادماً."
+        )
+        "الطلبات والخدمات" -> listOf(
+            "الطلبات والخدمات — تجربة محلية",
+            "يمكن تجربة فئات الطلبات والخدمات عبر البحث والفلاتر وإضافة إعلان تجريبي.",
+            "الطلب في هذه النسخة يستخدم نموذج إعلان محلي؛ لا يوجد مسار مستقل لإغلاق الطلب أو إدارة الردود.",
+            "كل البيانات أمثلة أو بيانات محلية، ولا تُعرض على الموقع الأصلي."
+        )
+        "التحقق من المحل" -> listOf(
+            "طلب توثيق محل — معاينة فقط",
+            "في الموقع الأصلي يرسل طلب التوثيق إلى الإدارة للمراجعة.",
+            "هذه النسخة لا ترسل الطلب ولا تمنح شارة موثّق فعلية. لا توجد مراجعة إدارية متصلة.",
+            "يتطلب التوثيق الفعلي حفظ الطلب على الخادم والتحقق من هوية مالك المحل وصلاحيات الإدارة."
+        )
+        "لوحة الإدارة" -> listOf(
+            "لوحة الإدارة — معاينة آمنة",
+            "واجهة الموقع المرجعية تتضمن مراجعة الإعلانات، إدارة المستخدمين والحظر، إحصاءات الزوار، سجل الإجراءات وإدارة الحملات.",
+            "هذه العناصر غير متصلة وغير متاحة كإجراءات إدارية في APK التجريبي؛ لن نضع صلاحيات إدارة حقيقية داخل تطبيق عام.",
+            "التنفيذ الحقيقي يتطلب خادماً يفرض الصلاحيات، وسجلاً تدقيقياً، وحسابات إدارة مخوّلة. لا يمكن الوثوق بفحص صلاحية داخل التطبيق وحده."
+        )
+        "العروض والبانرات" -> listOf(
+            "العروض والبانرات — معاينة",
+            "الموقع يدعم إبراز الإعلانات والعروض والبانرات.",
+            "لا توجد حالياً إدارة حملات فعلية أو رفع بانرات أو مزامنة عروض في التطبيق التجريبي.",
+            "ستظهر هذه الوظائف فعلياً بعد وجود خلفية اختبار آمنة وآلية مراجعة ونشر."
+        )
         "الإشعارات" -> listOf(
             "الإشعارات التجريبية",
             "لا توجد إشعارات حقيقية لأن التطبيق غير متصل بالخادم.",
@@ -432,7 +473,7 @@ private fun InfoPage(page: String, onBack: () -> Unit, modifier: Modifier = Modi
         )
         "الترويج" -> listOf(
             "ترويج الإعلانات — معاينة فقط",
-            "فكرة الترويج هي إبراز الإعلان في قسم مميز لفترة محددة.",
+            "فكرة الترويج هي إبراز الإعلان في قسم مميز لفترة محددة، مع باقات ومدد وأولوية ظهور.",
             "لا توجد حالياً باقات مدفوعة أو دفع إلكتروني أو نشر مميز حقيقي داخل التطبيق.",
             "لا تدفع أي مبلغ من خلال هذه النسخة. سيتم تنفيذ الترويج الفعلي لاحقاً عبر خادم آمن."
         )

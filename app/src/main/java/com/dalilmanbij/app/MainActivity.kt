@@ -308,6 +308,8 @@ private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, onInfo: (St
         }
         item { ElevatedCard(onClick = onMyItems, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Campaign, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إعلاناتي التجريبية", fontWeight = FontWeight.Bold); Text("عرض وحذف وتغيير حالة إعلانات هذا الجهاز", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
+        item { ElevatedCard(onClick = { onInfo("الإشعارات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Notifications, "الإشعارات", "حالة الإشعارات في النسخة التجريبية") } }
+        item { ElevatedCard(onClick = { onInfo("الترويج") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Star, "ترويج الإعلانات", "معاينة آلية الترويج دون دفع أو نشر فعلي") } }
         item { ElevatedCard(onClick = { onInfo("عن التطبيق") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Info, "عن دليل منبج", "فكرة التطبيق ومعلومات النسخة") } }
         item { ElevatedCard(onClick = { onInfo("الخصوصية") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Security, "سياسة الخصوصية", "كيف تتعامل النسخة التجريبية مع البيانات") } }
         item { ElevatedCard(onClick = { onInfo("الشروط") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Description, "الشروط والأحكام", "حدود استخدام النسخة التجريبية") } }
@@ -330,6 +332,18 @@ private fun InfoPage(page: String, onBack: () -> Unit, modifier: Modifier = Modi
             "المحفوظات والبلاغات التجريبية محلية ولا تُرسل إلى الإدارة أو إلى خادم.",
             "لا تُدخل كلمات مرور أو معلومات مالية أو بيانات شخصية حساسة في هذه النسخة.",
             "حذف التطبيق أو بياناته من إعدادات Android قد يؤدي إلى حذف البيانات المحلية."
+        )
+        "الإشعارات" -> listOf(
+            "الإشعارات التجريبية",
+            "لا توجد إشعارات حقيقية لأن التطبيق غير متصل بالخادم.",
+            "عند إنشاء إعلان أو الإبلاغ عن عنصر في هذه النسخة، لا تُرسل إشعارات إلى الإدارة أو إلى مستخدمين آخرين.",
+            "سيتم ربط إشعارات صاحب الإعلان وقراءة الإشعارات عند تنفيذ نظام الحساب والخادم الآمن."
+        )
+        "الترويج" -> listOf(
+            "ترويج الإعلانات — معاينة فقط",
+            "فكرة الترويج هي إبراز الإعلان في قسم مميز لفترة محددة.",
+            "لا توجد حالياً باقات مدفوعة أو دفع إلكتروني أو نشر مميز حقيقي داخل التطبيق.",
+            "لا تدفع أي مبلغ من خلال هذه النسخة. سيتم تنفيذ الترويج الفعلي لاحقاً عبر خادم آمن."
         )
         else -> listOf(
             "الشروط والأحكام التجريبية",

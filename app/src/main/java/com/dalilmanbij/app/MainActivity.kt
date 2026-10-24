@@ -70,6 +70,7 @@ fun DalilApp() {
     var showCreate by remember { mutableStateOf(false) }
     var showMyItems by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<DemoItem?>(null) }
+    var infoPage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val savedPrefs = remember(context) { context.getSharedPreferences("dalil_native_preferences", Context.MODE_PRIVATE) }
     var userItems by remember { mutableStateOf(loadUserItems(savedPrefs)) }
@@ -83,7 +84,7 @@ fun DalilApp() {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
     }
 
-    BackHandler(enabled = detail != null || selectedShop != null || category != null || reportItem != null || showCreate || showMyItems) {
+    BackHandler(enabled = detail != null || selectedShop != null || category != null || reportItem != null || showCreate || showMyItems || infoPage != null) {
         if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else category = null
     }
 
@@ -100,7 +101,7 @@ fun DalilApp() {
             topBar = {
                 CenterAlignedTopAppBar(
                     navigationIcon = {
-                        if (detail != null || selectedShop != null || category != null || showCreate || showMyItems) IconButton(onClick = { if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else category = null }) {
+                        if (detail != null || selectedShop != null || category != null || showCreate || showMyItems || infoPage != null) IconButton(onClick = { if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else if (infoPage != null) infoPage = null else category = null }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "رجوع")
                         }
                     },
@@ -143,7 +144,8 @@ fun DalilApp() {
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
-                else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, modifier = Modifier.padding(padding))
+                infoPage != null -> InfoPage(infoPage!!, onBack = { infoPage = null }, modifier = Modifier.padding(padding))
+                else -> AccountPage(onCreate = { showCreate = true }, onMyItems = { showMyItems = true }, onInfo = { infoPage = it }, modifier = Modifier.padding(padding))
             }
         }
     }
@@ -292,7 +294,7 @@ private fun SavedPage(items: List<DemoItem>, onDetail: (DemoItem) -> Unit, onRem
 }
 
 @Composable
-private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, modifier: Modifier = Modifier) {
+private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, onInfo: (String) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(16.dp)) {
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
@@ -305,8 +307,45 @@ private fun AccountPage(onCreate: () -> Unit, onMyItems: () -> Unit, modifier: M
         }
         item { ElevatedCard(onClick = onMyItems, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Campaign, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إعلاناتي التجريبية", fontWeight = FontWeight.Bold); Text("عرض وحذف وتغيير حالة إعلانات هذا الجهاز", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
-        item { AccountRow(Icons.Default.Settings, "الإعدادات", "إعدادات الحساب قيد التطوير") }
+        item { ElevatedCard(onClick = { onInfo("عن التطبيق") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Info, "عن دليل منبج", "فكرة التطبيق ومعلومات النسخة") } }
+        item { ElevatedCard(onClick = { onInfo("الخصوصية") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Security, "سياسة الخصوصية", "كيف تتعامل النسخة التجريبية مع البيانات") } }
+        item { ElevatedCard(onClick = { onInfo("الشروط") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Description, "الشروط والأحكام", "حدود استخدام النسخة التجريبية") } }
         item { Text("لا يوجد اتصال بالخادم في هذه النسخة التجريبية.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@Composable
+private fun InfoPage(page: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val body = when (page) {
+        "عن التطبيق" -> listOf(
+            "دليل منبج — سوقك بجيبك",
+            "نسخة أندرويد أصلية قيد التطوير لتجربة تصفح المحلات والإعلانات والخدمات المحلية.",
+            "العناصر والمحلات الظاهرة حالياً أمثلة توضيحية وليست بيانات تجارية حقيقية.",
+            "هذه النسخة لا تتصل بموقع دليل منبج الإنتاجي أو بقاعدة بياناته."
+        )
+        "الخصوصية" -> listOf(
+            "خصوصية النسخة التجريبية",
+            "الإعلانات التي تنشئها في هذه النسخة تُحفظ محلياً على جهازك باستخدام التخزين الداخلي للتطبيق.",
+            "المحفوظات والبلاغات التجريبية محلية ولا تُرسل إلى الإدارة أو إلى خادم.",
+            "لا تُدخل كلمات مرور أو معلومات مالية أو بيانات شخصية حساسة في هذه النسخة.",
+            "حذف التطبيق أو بياناته من إعدادات Android قد يؤدي إلى حذف البيانات المحلية."
+        )
+        else -> listOf(
+            "الشروط والأحكام التجريبية",
+            "التطبيق نسخة اختبار وليست خدمة نشر إعلانات فعلية.",
+            "المحتوى التجريبي لا يمثل عروضاً أو أسعاراً أو ساعات عمل حقيقية.",
+            "لا تُجرَ عمليات دفع أو تحقق محلات أو مراجعة إدارية حقيقية من داخل هذه النسخة.",
+            "استخدام النسخة حالياً مخصص لتجربة الواجهة والوظائف المحلية."
+        )
+    }
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { Heading(page, "معلومات مهمة عن النسخة الحالية") }
+        items(body) { paragraph ->
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
+                Text(paragraph, modifier = Modifier.fillMaxWidth().padding(16.dp), fontWeight = if (paragraph == body.first()) FontWeight.Bold else FontWeight.Normal)
+            }
+        }
+        item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("رجوع") } }
     }
 }
 

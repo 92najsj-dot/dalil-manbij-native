@@ -32,7 +32,7 @@ private val Muted = Color(0xFF68776E)
 private val Mint = Color(0xFFE8F5ED)
 private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "عقارات", "سيارات", "أثاث منزلي")
 
-private data class DemoItem(val title: String, val category: String, val area: String, val details: String)
+private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "")
 private val demoItems = listOf(
     DemoItem("مثال: محل ألبسة في منبج", "ملابس", "منبج", "محتوى توضيحي فقط، وليس إعلاناً منشوراً."),
     DemoItem("مثال: صيانة موبايلات", "موبايلات وإلكترونيات", "منبج", "محتوى توضيحي فقط، وليس إعلاناً منشوراً."),
@@ -279,6 +279,7 @@ private fun ItemCard(item: DemoItem, isSaved: Boolean, onOpen: () -> Unit, onSav
                 Column(Modifier.weight(1f)) {
                     Text(item.title, fontWeight = FontWeight.Bold)
                     Text("${item.category} • ${item.area}", color = Muted, style = MaterialTheme.typography.bodySmall)
+                    if (item.price.isNotBlank()) Text("${item.price} ${item.currency}", color = Green, fontWeight = FontWeight.Bold)
                 }
                 IconButton(onClick = onSave) { Icon(if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "حفظ", tint = if (isSaved) Color(0xFFB3261E) else Muted) }
             }
@@ -309,6 +310,8 @@ private fun DetailPage(
                 Icon(Icons.Default.Storefront, null, tint = Green, modifier = Modifier.size(52.dp))
                 Text(item.title, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                 Text("${item.category} • ${item.area}", color = Muted)
+                if (item.price.isNotBlank()) Text("السعر: ${item.price} ${item.currency}", color = Green, fontWeight = FontWeight.Bold)
+                if (item.contact.isNotBlank()) Text("للتواصل: ${item.contact}", color = Muted)
                 Spacer(Modifier.height(12.dp))
                 Text(item.details)
                 Spacer(Modifier.height(16.dp))
@@ -410,6 +413,10 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
     var category by remember(initialItem) { mutableStateOf(initialItem?.category ?: categories.first()) }
     var area by remember(initialItem) { mutableStateOf(initialItem?.area ?: "منبج") }
     var details by remember(initialItem) { mutableStateOf(initialItem?.details?.removePrefix("الحالة: تم البيع\\n").orEmpty()) }
+    var price by remember(initialItem) { mutableStateOf(initialItem?.price.orEmpty()) }
+    var currency by remember(initialItem) { mutableStateOf(initialItem?.currency ?: "ل.س") }
+    var contact by remember(initialItem) { mutableStateOf(initialItem?.contact.orEmpty()) }
+    var currencyExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
     var areaExpanded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -428,9 +435,12 @@ private fun CreateItemPage(initialItem: DemoItem? = null, onCancel: () -> Unit, 
                 ExposedDropdownMenu(expanded = areaExpanded, onDismissRequest = { areaExpanded = false }) { listOf("منبج", "ريف منبج").forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { area = option; areaExpanded = false }) } }
             }
         }
+        item { OutlinedTextField(value = price, onValueChange = { value -> price = value.filter { it.isDigit() || it == '.' || it == ',' }; error = null }, label = { Text("السعر (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+        item { ExposedDropdownMenuBox(expanded = currencyExpanded, onExpandedChange = { currencyExpanded = !currencyExpanded }) { OutlinedTextField(value = currency, onValueChange = {}, readOnly = true, label = { Text("العملة") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(currencyExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth()); ExposedDropdownMenu(expanded = currencyExpanded, onDismissRequest = { currencyExpanded = false }) { listOf("ل.س", "$").forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { currency = option; currencyExpanded = false }) } } } }
+        item { OutlinedTextField(value = contact, onValueChange = { contact = it; error = null }, label = { Text("رقم التواصل (اختياري)") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item { OutlinedTextField(value = details, onValueChange = { details = it; error = null }, label = { Text("تفاصيل الإعلان") }, modifier = Modifier.fillMaxWidth(), minLines = 3) }
         if (error != null) item { Text(error!!, color = Color(0xFFB3261E)) }
-        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") } }
+        item { Button(onClick = { if (title.trim().length < 3) error = "اكتب عنواناً من 3 أحرف على الأقل" else if (details.trim().length < 5) error = "أضف تفاصيل أوضح للإعلان" else onCreate(DemoItem(title.trim(), category, area, details.trim(), price.trim().replace(',', '.'), currency, contact.trim())) }, modifier = Modifier.fillMaxWidth()) { Text(if (initialItem == null) "حفظ الإعلان التجريبي" else "حفظ التعديلات") }
         item { OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("إلغاء") } }
     }
 }
@@ -439,23 +449,23 @@ private fun loadUserItems(prefs: android.content.SharedPreferences): List<DemoIt
     prefs.getString("user_items_v1", "").orEmpty().lineSequence().filter { it.isNotBlank() }.mapNotNull { row ->
         runCatching {
             val p = row.split(".")
-            if (p.size != 4) null else DemoItem(
-                String(Base64.decode(p[0], Base64.NO_WRAP), Charsets.UTF_8),
-                String(Base64.decode(p[1], Base64.NO_WRAP), Charsets.UTF_8),
-                String(Base64.decode(p[2], Base64.NO_WRAP), Charsets.UTF_8),
-                String(Base64.decode(p[3], Base64.NO_WRAP), Charsets.UTF_8)
-            )
+            if (p.size != 4 && p.size != 7) null else {
+                fun decode(index: Int) = String(Base64.decode(p[index], Base64.NO_WRAP), Charsets.UTF_8)
+                DemoItem(decode(0), decode(1), decode(2), decode(3),
+                    if (p.size == 7) decode(4) else "",
+                    if (p.size == 7) decode(5) else "ل.س",
+                    if (p.size == 7) decode(6) else "")
+            }
         }.getOrNull()
     }.toList()
 
 private fun saveUserItems(prefs: android.content.SharedPreferences, items: List<DemoItem>) {
     val encoded = items.joinToString("\n") { item ->
-        listOf(item.title, item.category, item.area, item.details)
+        listOf(item.title, item.category, item.area, item.details, item.price, item.currency, item.contact)
             .joinToString(".") { Base64.encodeToString(it.toByteArray(Charsets.UTF_8), Base64.NO_WRAP) }
     }
     prefs.edit().putString("user_items_v1", encoded).apply()
 }
-
 @Composable
 private fun MyItemsPage(
     userItems: List<DemoItem>,

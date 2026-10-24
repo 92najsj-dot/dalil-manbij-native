@@ -96,8 +96,24 @@ fun DalilApp() {
     var displayName by remember { mutableStateOf(savedPrefs.getString("local_display_name", "").orEmpty()) }
     var authEmail by remember { mutableStateOf(savedPrefs.getString("test_auth_email", "").orEmpty()) }
     var authToken by remember { mutableStateOf(savedPrefs.getString("test_auth_token", "").orEmpty()) }
+    var remoteItems by remember { mutableStateOf<List<DemoItem>>(emptyList()) }
+    var backendStatus by remember { mutableStateOf("جارٍ تحميل إعلانات بيئة الاختبار…") }
 
     LaunchedEffect(userItems) { saveUserItems(savedPrefs, userItems) }
+
+    LaunchedEffect(Unit) {
+        Thread {
+            val result = runCatching { fetchPublishedTestListings() }
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                result.onSuccess { loaded ->
+                    remoteItems = loaded
+                    backendStatus = "اتصال قاعدة الاختبار ناجح • " + loaded.size + " إعلان منشور"
+                }.onFailure { error ->
+                    backendStatus = "تعذر تحميل الإعلانات التجريبية: " + (error.message ?: "خطأ اتصال")
+                }
+            }
+        }.start()
+    }
 
     LaunchedEffect(saved) {
         savedPrefs.edit().putStringSet("saved_titles", saved.toSet()).apply()
@@ -107,7 +123,7 @@ fun DalilApp() {
         if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else if (infoPage != null) infoPage = null else category = null
     }
 
-    val allItems = demoItems + userItems
+    val allItems = demoItems + userItems + remoteItems
     val visible = allItems.filter {
         (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true) || it.details.contains(query, true)) &&
         (category == null || it.category == category) &&
@@ -222,6 +238,8 @@ private fun HomePage(
                     Text("أهلاً بك في دليل منبج", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(Modifier.height(7.dp))
                     Text("اكتشف المحلات والخدمات والإعلانات المحلية", color = Color.White)
+                    Spacer(Modifier.height(5.dp))
+                    Text(backendStatus, color = Color(0xFFD8F1E3), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -650,6 +668,40 @@ private fun EmptyBox(title: String, subtitle: String) {
             Text(title, fontWeight = FontWeight.Bold)
             Text(subtitle, color = Muted, style = MaterialTheme.typography.bodySmall)
         }
+    }
+}
+
+
+private fun fetchPublishedTestListings(): List<DemoItem> {
+    val connection = (URL(BuildConfig.SUPABASE_URL + "/rest/v1/listings?select=title,category,area,village,details,price,currency,contact,image_urls,status&status=eq.published&order=created_at.desc&limit=100").openConnection() as HttpURLConnection)
+    connection.requestMethod = "GET"
+    connection.connectTimeout = 15000
+    connection.readTimeout = 15000
+    connection.setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+    connection.setRequestProperty("Authorization", "Bearer " + BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+    connection.setRequestProperty("Accept", "application/json")
+    val code = connection.responseCode
+    val body = (if (code in 200..299) connection.inputStream else connection.errorStream).bufferedReader(Charsets.UTF_8).use { it.readText() }
+    connection.disconnect()
+    if (code !in 200..299) throw IllegalStateException("قاعدة البيانات ردّت بالرمز " + code)
+    val array = org.json.JSONArray(body)
+    return (0 until array.length()).mapNotNull { index ->
+        val row = array.optJSONObject(index) ?: return@mapNotNull null
+        val title = row.optString("title", "")
+        if (title.isBlank()) return@mapNotNull null
+        val currency = if (row.optString("currency", "SYP") == "USD") "$" else "ل.س"
+        val imageArray = row.optJSONArray("image_urls")
+        val image = if (imageArray != null && imageArray.length() > 0) imageArray.optString(0, "") else ""
+        DemoItem(
+            title = title,
+            category = row.optString("category", ""),
+            area = listOf(row.optString("area", ""), row.optString("village", "")).filter { it.isNotBlank() }.distinct().joinToString(" • "),
+            details = row.optString("details", ""),
+            price = if (row.isNull("price")) "" else row.optString("price", ""),
+            currency = currency,
+            contact = row.optString("contact", ""),
+            imageUri = image
+        )
     }
 }
 

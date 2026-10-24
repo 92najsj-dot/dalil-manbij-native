@@ -63,6 +63,8 @@ fun DalilApp() {
     var minPrice by remember { mutableStateOf("") }
     var maxPrice by remember { mutableStateOf("") }
     var filterCurrency by remember { mutableStateOf("الكل") }
+    var sortOrder by remember { mutableStateOf("الأحدث أولاً") }
+    var statusFilter by remember { mutableStateOf("الكل") }
     var filters by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<DemoItem?>(null) }
     var selectedShop by remember { mutableStateOf<DemoShop?>(null) }
@@ -90,9 +92,20 @@ fun DalilApp() {
 
     val allItems = demoItems + userItems
     val visible = allItems.filter {
-        (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true)) &&
+        (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true) || it.area.contains(query, true) || it.details.contains(query, true)) &&
         (category == null || it.category == category) &&
-        (area == "كل المناطق" || it.area == area) && (filterCurrency == "الكل" || (it.price.isNotBlank() && it.currency == filterCurrency)) && (minPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price >= (minPrice.toDoubleOrNull() ?: 0.0) } ?: false)) && (maxPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price <= (maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE) } ?: false))
+        (area == "كل المناطق" || it.area == area) &&
+        (statusFilter == "الكل" || (statusFilter == "متاح" && !it.details.startsWith("الحالة: تم البيع")) || (statusFilter == "تم البيع" && it.details.startsWith("الحالة: تم البيع"))) &&
+        (filterCurrency == "الكل" || (it.price.isNotBlank() && it.currency == filterCurrency)) &&
+        (minPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price >= (minPrice.toDoubleOrNull() ?: 0.0) } ?: false)) &&
+        (maxPrice.isBlank() || (it.price.replace(",", ".").toDoubleOrNull()?.let { price -> price <= (maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE) } ?: false))
+    }.let { result ->
+        when (sortOrder) {
+            "السعر الأقل" -> result.sortedBy { it.price.replace(",", ".").toDoubleOrNull() ?: Double.MAX_VALUE }
+            "السعر الأعلى" -> result.sortedByDescending { it.price.replace(",", ".").toDoubleOrNull() ?: -1.0 }
+            "الاسم أ-ي" -> result.sortedBy { it.title.lowercase() }
+            else -> result.reversed()
+        }
     }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = Gold, background = Color(0xFFF5F8F5))) {
@@ -142,7 +155,7 @@ fun DalilApp() {
                     Modifier.padding(padding)
                 )
                 tab == 0 && category != null -> ResultsPage(category!!, visible, saved, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
-                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
+                tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, sortOrder, { sortOrder = it }, statusFilter, { statusFilter = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
                 infoPage != null -> InfoPage(infoPage!!, onBack = { infoPage = null }, modifier = Modifier.padding(padding))
@@ -155,7 +168,7 @@ fun DalilApp() {
 @Composable
 private fun HomePage(
     query: String, onQuery: (String) -> Unit, filters: Boolean, onToggleFilters: () -> Unit,
-    area: String, onArea: (String) -> Unit, minPrice: String, onMinPrice: (String) -> Unit, maxPrice: String, onMaxPrice: (String) -> Unit, filterCurrency: String, onFilterCurrency: (String) -> Unit, items: List<DemoItem>, saved: Set<String>,
+    area: String, onArea: (String) -> Unit, minPrice: String, onMinPrice: (String) -> Unit, maxPrice: String, onMaxPrice: (String) -> Unit, filterCurrency: String, onFilterCurrency: (String) -> Unit, sortOrder: String, onSortOrder: (String) -> Unit, statusFilter: String, onStatusFilter: (String) -> Unit, items: List<DemoItem>, saved: Set<String>,
     onCategory: (String) -> Unit, onDetail: (DemoItem) -> Unit, onSave: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -202,6 +215,23 @@ private fun HomePage(
                         FilterChip(filterCurrency == "الكل", { onFilterCurrency("الكل") }, { Text("كل العملات") })
                         FilterChip(filterCurrency == "ل.س", { onFilterCurrency("ل.س") }, { Text("ليرة سورية") })
                         FilterChip(filterCurrency == "$", { onFilterCurrency("$") }, { Text("دولار") })
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("حالة الإعلان", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(statusFilter == "الكل", { onStatusFilter("الكل") }, { Text("الكل") })
+                        FilterChip(statusFilter == "متاح", { onStatusFilter("متاح") }, { Text("متاح") })
+                        FilterChip(statusFilter == "تم البيع", { onStatusFilter("تم البيع") }, { Text("تم البيع") })
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("ترتيب النتائج", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        FilterChip(sortOrder == "الأحدث أولاً", { onSortOrder("الأحدث أولاً") }, { Text("الأحدث") })
+                        FilterChip(sortOrder == "السعر الأقل", { onSortOrder("السعر الأقل") }, { Text("الأرخص") })
+                        FilterChip(sortOrder == "السعر الأعلى", { onSortOrder("السعر الأعلى") }, { Text("الأغلى") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        FilterChip(sortOrder == "الاسم أ-ي", { onSortOrder("الاسم أ-ي") }, { Text("الاسم أ-ي") })
                     }
                 }
             }

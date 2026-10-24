@@ -6,6 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.io.OutputStreamWriter
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -90,6 +94,8 @@ fun DalilApp() {
         mutableStateOf(savedPrefs.getStringSet("saved_titles", emptySet())?.toSet() ?: emptySet())
     }
     var displayName by remember { mutableStateOf(savedPrefs.getString("local_display_name", "").orEmpty()) }
+    var authEmail by remember { mutableStateOf(savedPrefs.getString("test_auth_email", "").orEmpty()) }
+    var authToken by remember { mutableStateOf(savedPrefs.getString("test_auth_token", "").orEmpty()) }
 
     LaunchedEffect(userItems) { saveUserItems(savedPrefs, userItems) }
 
@@ -169,6 +175,18 @@ fun DalilApp() {
                 tab == 0 -> HomePage(query, { query = it; category = null }, filters, { filters = !filters }, area, { area = it }, minPrice, { minPrice = it }, maxPrice, { maxPrice = it }, filterCurrency, { filterCurrency = it }, sortOrder, { sortOrder = it }, statusFilter, { statusFilter = it }, visible, saved, { category = it }, { detail = it }, { title -> saved = if (saved.contains(title)) saved - title else saved + title }, Modifier.padding(padding))
                 tab == 1 -> ShopsPage(demoShops, { selectedShop = it }, Modifier.padding(padding))
                 tab == 2 -> SavedPage(allItems.filter { saved.contains(it.title) }, { detail = it }, { title -> saved = saved - title }, Modifier.padding(padding))
+                infoPage == "تسجيل الدخول" -> AuthPage(
+                    currentEmail = authEmail,
+                    onBack = { infoPage = null },
+                    onAuthSuccess = { email, token ->
+                        authEmail = email
+                        authToken = token
+                        savedPrefs.edit().putString("test_auth_email", email).putString("test_auth_token", token).apply()
+                        infoPage = null
+                        Toast.makeText(context, "تم تسجيل الدخول إلى بيئة الاختبار", Toast.LENGTH_LONG).show()
+                    },
+                    modifier = Modifier.padding(padding)
+                )
                 infoPage != null -> InfoPage(infoPage!!, onBack = { infoPage = null }, modifier = Modifier.padding(padding))
                 else -> AccountPage(
                     displayName = displayName,
@@ -402,7 +420,7 @@ private fun AccountPage(
                     Icon(Icons.Default.AccountCircle, null, tint = Green, modifier = Modifier.size(60.dp))
                     Text("حسابي", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
                     Text(displayName.ifBlank { "أضف اسماً ظاهراً (اختياري)" }, color = Muted)
-                    Text("تسجيل الدخول وإدارة الإعلانات قيد التطوير.", color = Muted)
+                    Text(if (authEmail.isBlank()) "الحسابات التجريبية عبر بيئة الاختبار" else "حساب الاختبار: $authEmail", color = Muted)
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = { nameDraft = displayName; showNameDialog = true }) {
                         Icon(Icons.Default.Edit, null)
@@ -414,7 +432,7 @@ private fun AccountPage(
         }
         item { ElevatedCard(onClick = onMyItems, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Campaign, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إعلاناتي التجريبية", fontWeight = FontWeight.Bold); Text("عرض وحذف وتغيير حالة إعلانات هذا الجهاز", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
         item { ElevatedCard(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.AddCircle, null, tint = Green); Spacer(Modifier.width(12.dp)); Column { Text("إضافة إعلان تجريبي", fontWeight = FontWeight.Bold); Text("حفظ محلي على هذا الجهاز فقط", color = Muted, style = MaterialTheme.typography.bodySmall) } } } }
-        item { ElevatedCard(onClick = { onInfo("تسجيل الدخول") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Login, "تسجيل الدخول / إنشاء حساب", "واجهة توضيحية؛ الحسابات غير مفعّلة في هذه النسخة") } }
+        item { ElevatedCard(onClick = { onInfo("تسجيل الدخول") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Login, if (authEmail.isBlank()) "تسجيل الدخول / إنشاء حساب" else "الحساب متصل: $authEmail", "حسابات بيئة الاختبار المنفصلة") } }
         item { ElevatedCard(onClick = { onInfo("الملف الشخصي") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Person, "الملف الشخصي والاسم الظاهر", "معاينة إعدادات الملف الشخصي والصفحة العامة") } }
         item { ElevatedCard(onClick = { onInfo("الطلبات والخدمات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Handyman, "الطلبات والخدمات", "تصفحها من الأقسام الرئيسية؛ البيانات محلية تجريبية") } }
         item { ElevatedCard(onClick = { onInfo("التحقق من المحل") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Verified, "طلب توثيق محل", "معاينة متطلبات التوثيق دون إرسال طلب حقيقي") } }

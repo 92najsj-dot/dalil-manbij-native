@@ -85,7 +85,7 @@ fun DalilApp() {
     }
 
     BackHandler(enabled = detail != null || selectedShop != null || category != null || reportItem != null || showCreate || showMyItems || infoPage != null) {
-        if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else category = null
+        if (showCreate) showCreate = false else if (showMyItems) showMyItems = false else if (reportItem != null) reportItem = null else if (detail != null) detail = null else if (selectedShop != null) selectedShop = null else if (infoPage != null) infoPage = null else category = null
     }
 
     val allItems = demoItems + userItems

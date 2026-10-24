@@ -227,6 +227,7 @@ fun DalilApp() {
                 else -> AccountPage(
                     displayName = displayName,
                     authEmail = authEmail,
+                    onLogout = { authEmail = ""; authToken = ""; savedPrefs.edit().remove("test_auth_email").remove("test_auth_token").apply(); Toast.makeText(context, "تم تسجيل الخروج من بيئة الاختبار", Toast.LENGTH_SHORT).show() },
                     onDisplayNameChange = { name ->
                         displayName = name.trim()
                         savedPrefs.edit().putString("local_display_name", displayName).apply()
@@ -484,6 +485,7 @@ private fun AuthPage(
 private fun AccountPage(
     displayName: String,
     authEmail: String,
+    onLogout: () -> Unit,
     onDisplayNameChange: (String) -> Unit,
     onCreate: () -> Unit,
     onMyItems: () -> Unit,
@@ -523,6 +525,7 @@ private fun AccountPage(
                     Text("حسابي", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
                     Text(displayName.ifBlank { "أضف اسماً ظاهراً (اختياري)" }, color = Muted)
                     Text(if (authEmail.isBlank()) "الحسابات التجريبية عبر بيئة الاختبار" else "حساب الاختبار: $authEmail", color = Muted)
+                    if (authEmail.isNotBlank()) { TextButton(onClick = onLogout) { Text("تسجيل الخروج من حساب الاختبار") } }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = { nameDraft = displayName; showNameDialog = true }) {
                         Icon(Icons.Default.Edit, null)

@@ -114,7 +114,7 @@ fun DalilApp() {
             },
             bottomBar = {
                 NavigationBar(containerColor = Color(0xFFF3EDF7)) {
-                    NavigationBarItem(tab == 0, { tab = 0; category = null; detail = null; selectedShop = null }, { Icon(Icons.Default.Home, "الرئيسية") }, label = { Text("الرئيسية") })
+                    NavigationBarItem(tab == 0, { tab = 0; category = null; detail = null; selectedShop = null; infoPage = null }, { Icon(Icons.Default.Home, "الرئيسية") }, label = { Text("الرئيسية") })
                     NavigationBarItem(tab == 1, { tab = 1; category = null; detail = null; selectedShop = null }, { Icon(Icons.Default.Store, "المحلات") }, label = { Text("المحلات") })
                     NavigationBarItem(tab == 2, { tab = 2; category = null; detail = null; selectedShop = null }, { Icon(Icons.Default.FavoriteBorder, "المحفوظات") }, label = { Text("المحفوظات") })
                     NavigationBarItem(tab == 3, { tab = 3; category = null; detail = null; selectedShop = null }, { Icon(Icons.Default.Person, "حسابي") }, label = { Text("حسابي") })

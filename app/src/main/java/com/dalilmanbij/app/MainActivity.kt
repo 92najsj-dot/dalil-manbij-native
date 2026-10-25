@@ -278,6 +278,23 @@ private fun HomePage(
             }
         }
         item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("طلبات" to "📣", "وظائف" to "💼", "خدمات" to "🛠️").forEach { (label, emoji) ->
+                    ElevatedCard(
+                        onClick = { onCategory(label) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(15.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 13.dp, horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text(emoji, fontSize = 23.sp)
+                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    }
+                }
+            }
+        }
+        item {
             Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3D9))) {
                 Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Campaign, contentDescription = null, tint = Color(0xFF9B6500), modifier = Modifier.size(34.dp))

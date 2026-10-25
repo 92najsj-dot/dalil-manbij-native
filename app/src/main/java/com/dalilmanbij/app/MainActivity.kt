@@ -262,7 +262,7 @@ private fun HomePage(
                 Column(Modifier.fillMaxWidth().padding(22.dp)) {
                     Text("كل منبج بمكان واحد", color = Gold, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(7.dp))
-                    Text("أهلاً بك في دليل منبج", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("كل اللي بدك ياه، بتلاقيه قريب منك.", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(Modifier.height(7.dp))
                     Text("اكتشف المحلات والخدمات والإعلانات المحلية", color = Color.White)
                     Spacer(Modifier.height(5.dp))

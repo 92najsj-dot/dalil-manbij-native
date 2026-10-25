@@ -239,6 +239,7 @@ fun DalilApp() {
                 else -> AccountPage(
                     displayName = displayName,
                     authEmail = authEmail,
+                    isAdmin = authEmail.equals("92najsj@gmail.com", ignoreCase = true),
                     onLogout = { authEmail = ""; authToken = ""; savedPrefs.edit().remove("test_auth_email").remove("test_auth_token").apply(); Toast.makeText(context, "تم تسجيل الخروج من بيئة الاختبار", Toast.LENGTH_SHORT).show() },
                     onDisplayNameChange = { name ->
                         displayName = name.trim()

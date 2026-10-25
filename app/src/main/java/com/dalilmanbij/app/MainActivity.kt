@@ -264,7 +264,7 @@ private fun HomePage(
                     Spacer(Modifier.height(7.dp))
                     Text("كل اللي بدك ياه، بتلاقيه قريب منك.", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(Modifier.height(7.dp))
-                    Text("اكتشف المحلات والخدمات والإعلانات المحلية", color = Color.White)
+                    Text("دليل المحلات والخدمات، وسوق محلي للبيع والشراء، وطلباتك اليومية من مكان واحد.", color = Color.White)
                     Spacer(Modifier.height(5.dp))
                     Text(backendStatus, color = Color(0xFFD8F1E3), style = MaterialTheme.typography.bodySmall)
                 }

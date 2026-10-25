@@ -345,14 +345,19 @@ private fun HomePage(
         }
         item { Heading("الأقسام", "اكتشف خدمات ومحلات منبج وريفها") }
         if (visibleCategories.isEmpty()) item { EmptyBox("ما لقينا قسم مطابق", "جرّب كلمة بحث مختلفة.") }
-        items(visibleCategories) { name ->
-            ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFF7F1F9))) {
-                Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(when (name) { "مطاعم ومقاهي" -> "🍽️"; "بقاليات" -> "🛒"; "ملابس" -> "👕"; "موبايلات وإلكترونيات" -> "📱"; "أجهزة كهربائية" -> "🔌"; "خدمات" -> "🛠️"; "طلبات" -> "📣"; "وظائف" -> "💼"; "عقارات" -> "🏠"; "سيارات" -> "🚗"; "أثاث منزلي" -> "🛋️"; "مواد بناء" -> "🧱"; "زراعة ومواشي" -> "🌾"; "تعليم ودورات" -> "📚"; "صحة وعيادات" -> "🩺"; "نقل ومواصلات" -> "🚚"; else -> "📍" }, fontSize = 24.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    Icon(Icons.Default.ChevronRight, "فتح القسم")
+        items(visibleCategories.chunked(3)) { rowCategories ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowCategories.forEach { name ->
+                    ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.weight(1f).heightIn(min = 112.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 13.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(color = Mint, shape = RoundedCornerShape(13.dp)) {
+                                Text(when (name) { "مطاعم ومقاهي" -> "🍽️"; "بقاليات" -> "🛒"; "ملابس" -> "👕"; "موبايلات وإلكترونيات" -> "📱"; "أجهزة كهربائية" -> "🔌"; "خدمات" -> "🛠️"; "طلبات" -> "📣"; "وظائف" -> "💼"; "عقارات" -> "🏠"; "سيارات" -> "🚗"; "أثاث منزلي" -> "🛋️"; "مواد بناء" -> "🧱"; "زراعة ومواشي" -> "🌾"; "تعليم ودورات" -> "📚"; "صحة وعيادات" -> "🩺"; "نقل ومواصلات" -> "🚚"; else -> "📍" }, fontSize = 24.sp, modifier = Modifier.padding(8.dp))
+                            }
+                            Text(name, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                    }
                 }
+                repeat(3 - rowCategories.size) { Spacer(Modifier.weight(1f)) }
             }
         }
         item { Heading("نماذج إعلانات", "بيانات تجريبية وليست منشورة") }

@@ -580,7 +580,7 @@ private fun AccountPage(
         item { ElevatedCard(onClick = { onInfo("الإشعارات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Notifications, "الإشعارات", "سجل توضيحي؛ لا توجد إشعارات خادمية حقيقية") } }
         item { ElevatedCard(onClick = { onInfo("الترويج") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Star, "ترويج الإعلانات", "معاينة الباقات والمدة والأولوية دون دفع") } }
         item { ElevatedCard(onClick = { onInfo("العروض والبانرات") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Campaign, "العروض والبانرات", "معاينة واجهة الحملات الإعلانية؛ الإدارة غير متصلة") } }
-        item { ElevatedCard(onClick = { onInfo("لوحة الإدارة") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.AdminPanelSettings, "لوحة الإدارة (معاينة)", "أدوات مراجعة وحظر وإحصاءات تجريبية فقط") } }
+        if (isAdmin) item { ElevatedCard(onClick = { onInfo("لوحة الإدارة") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.AdminPanelSettings, "لوحة الإدارة", "دخول المدير • أدوات تجريبية للمعاينة فقط") } }
         item { ElevatedCard(onClick = { onInfo("عن التطبيق") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Info, "عن دليل منبج", "فكرة التطبيق ومعلومات النسخة") } }
         item { ElevatedCard(onClick = { onInfo("الخصوصية") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Security, "سياسة الخصوصية", "كيف تتعامل النسخة التجريبية مع البيانات") } }
         item { ElevatedCard(onClick = { onInfo("الشروط") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Description, "الشروط والأحكام", "حدود استخدام النسخة التجريبية") } }

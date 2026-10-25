@@ -520,6 +520,7 @@ private fun AuthPage(
 private fun AccountPage(
     displayName: String,
     authEmail: String,
+    isAdmin: Boolean,
     onLogout: () -> Unit,
     onDisplayNameChange: (String) -> Unit,
     onCreate: () -> Unit,

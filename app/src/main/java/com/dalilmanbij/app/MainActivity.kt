@@ -336,7 +336,7 @@ private fun HomePage(
                 }
             }
         }
-        item { Heading("الأقسام", "اختَر القسم المناسب") }
+        item { Heading("الأقسام", "اكتشف خدمات ومحلات منبج وريفها") }
         if (visibleCategories.isEmpty()) item { EmptyBox("ما لقينا قسم مطابق", "جرّب كلمة بحث مختلفة.") }
         items(visibleCategories) { name ->
             ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFF7F1F9))) {

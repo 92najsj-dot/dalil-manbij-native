@@ -37,7 +37,7 @@ private val DarkGreen = Color(0xFF123D30)
 private val Gold = Color(0xFFF4B45F)
 private val Muted = Color(0xFF68776E)
 private val Mint = Color(0xFFE8F5ED)
-private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "خدمات", "طلبات", "عقارات", "سيارات", "أثاث منزلي")
+private val categories = listOf("مطاعم ومقاهي", "بقاليات", "ملابس", "موبايلات وإلكترونيات", "أجهزة كهربائية", "خدمات", "طلبات", "وظائف", "عقارات", "سيارات", "أثاث منزلي", "مواد بناء", "زراعة ومواشي", "تعليم ودورات", "صحة وعيادات", "نقل ومواصلات")
 
 private data class DemoItem(val title: String, val category: String, val area: String, val details: String, val price: String = "", val currency: String = "ل.س", val contact: String = "", val imageUri: String = "")
 private data class DemoShop(val name: String, val category: String, val area: String, val description: String, val phone: String = "", val hours: String = "تُحدّد ساعات العمل من صاحب المحل", val verified: Boolean = false)

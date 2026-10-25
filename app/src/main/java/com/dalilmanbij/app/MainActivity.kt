@@ -363,7 +363,7 @@ private fun HomePage(
         item { Heading("نماذج إعلانات", "بيانات تجريبية وليست منشورة") }
         if (items.isEmpty()) item { EmptyBox("ما لقينا نتائج مطابقة", "غيّر كلمة البحث أو المنطقة.") }
         items(items) { item -> ItemCard(item, saved.contains(item.title), { onDetail(item) }, { onSave(item.title) }) }
-        item { Text("نسخة تطوير مستقلة؛ لا تتصل حالياً بالموقع أو قاعدة البيانات.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+        item { Text("ملاحظة: العناصر التي تبدأ بكلمة «مثال» بيانات توضيحية. الإعلانات المنشورة من بيئة الاختبار تظهر بشكل منفصل عند نجاح الاتصال.", color = Muted, style = MaterialTheme.typography.bodySmall) }
     }
 }
 

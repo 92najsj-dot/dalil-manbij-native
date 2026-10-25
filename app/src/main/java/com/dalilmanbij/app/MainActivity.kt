@@ -565,7 +565,7 @@ private fun AccountPage(
         item { ElevatedCard(onClick = { onInfo("عن التطبيق") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Info, "عن دليل منبج", "فكرة التطبيق ومعلومات النسخة") } }
         item { ElevatedCard(onClick = { onInfo("الخصوصية") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Security, "سياسة الخصوصية", "كيف تتعامل النسخة التجريبية مع البيانات") } }
         item { ElevatedCard(onClick = { onInfo("الشروط") }, modifier = Modifier.fillMaxWidth()) { AccountRow(Icons.Default.Description, "الشروط والأحكام", "حدود استخدام النسخة التجريبية") } }
-        item { Text("لا يوجد اتصال بالخادم في هذه النسخة التجريبية.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+        item { Text("مهم: تسجيل الدخول والبيانات المتصلة تعمل ضمن بيئة اختبار منفصلة فقط؛ بقية الميزات محلية أو للمعاينة، ولا تغيّر بيانات موقع دليل منبج الإنتاجي.", color = Muted, style = MaterialTheme.typography.bodySmall) }
     }
 }
 

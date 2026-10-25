@@ -341,7 +341,7 @@ private fun HomePage(
         items(visibleCategories) { name ->
             ElevatedCard(onClick = { onCategory(name) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFF7F1F9))) {
                 Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(when (name) { "مطاعم ومقاهي" -> "🍽️"; "بقاليات" -> "🛒"; "ملابس" -> "👕"; "موبايلات وإلكترونيات" -> "📱"; "خدمات" -> "🛠️"; "طلبات" -> "📣"; "عقارات" -> "🏗️"; "سيارات" -> "🚗"; "أثاث منزلي" -> "🛋️"; else -> "📍" }, fontSize = 24.sp)
+                    Text(when (name) { "مطاعم ومقاهي" -> "🍽️"; "بقاليات" -> "🛒"; "ملابس" -> "👕"; "موبايلات وإلكترونيات" -> "📱"; "أجهزة كهربائية" -> "🔌"; "خدمات" -> "🛠️"; "طلبات" -> "📣"; "وظائف" -> "💼"; "عقارات" -> "🏠"; "سيارات" -> "🚗"; "أثاث منزلي" -> "🛋️"; "مواد بناء" -> "🧱"; "زراعة ومواشي" -> "🌾"; "تعليم ودورات" -> "📚"; "صحة وعيادات" -> "🩺"; "نقل ومواصلات" -> "🚚"; else -> "📍" }, fontSize = 24.sp)
                     Spacer(Modifier.width(12.dp))
                     Text(name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Icon(Icons.Default.ChevronRight, "فتح القسم")

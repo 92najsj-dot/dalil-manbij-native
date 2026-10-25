@@ -258,7 +258,7 @@ private fun HomePage(
     val visibleCategories = categories.filter { query.isBlank() || it.contains(query, ignoreCase = true) }
     LazyColumn(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(13.dp), contentPadding = PaddingValues(16.dp)) {
         item {
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = DarkGreen)) {
+            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Green)) {
                 Column(Modifier.fillMaxWidth().padding(22.dp)) {
                     Text("كل منبج بمكان واحد", color = Gold, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(7.dp))
@@ -276,8 +276,8 @@ private fun HomePage(
                     Icon(Icons.Default.Campaign, contentDescription = null, tint = Color(0xFF9B6500), modifier = Modifier.size(34.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("العروض والإعلانات المميزة", fontWeight = FontWeight.ExtraBold, color = DarkGreen)
-                        Text("معاينة محلية فقط — لا توجد حملة أو دفعة حقيقية", color = Muted, style = MaterialTheme.typography.bodySmall)
+                        Text("⭐ الإعلانات المميزة", fontWeight = FontWeight.ExtraBold, color = DarkGreen)
+                        Text("عروض من منبج وريفها", color = Muted, style = MaterialTheme.typography.bodySmall)
                     }
                     Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
                         Text("تجريبي", color = Color(0xFF9B6500), modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall)

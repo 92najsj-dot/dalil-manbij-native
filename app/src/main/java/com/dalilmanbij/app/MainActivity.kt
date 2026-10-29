@@ -70,11 +70,11 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
    actions={IconButton(onClick={page=Screen.NOTICES}){Icon(Icons.Default.Notifications,"الإشعارات")}},
    colors=TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor=Color.White)
   )},bottomBar={NavigationBar(containerColor=Color.White){
-   NavigationBarItem(page==Screen.HOME,{page=Screen.HOME;chosen=null},{Icon(Icons.Default.Home,null)},{Text("الرئيسية")})
-   NavigationBarItem(page==Screen.ADS||page==Screen.SHOPS,{page=Screen.ADS;chosen=null},{Icon(Icons.Default.Search,null)},{Text("تصفح")})
-   NavigationBarItem(page==Screen.ADD,{page=Screen.ADD;chosen=null},{Icon(Icons.Default.AddCircle,null)},{Text("أضف")})
-   NavigationBarItem(page==Screen.SAVED,{page=Screen.SAVED;chosen=null},{Icon(Icons.Default.FavoriteBorder,null)},{Text("المحفوظات")})
-   NavigationBarItem(page==Screen.ACCOUNT,{page=Screen.ACCOUNT;chosen=null},{Icon(Icons.Default.Person,null)},{Text("حسابي")})
+   NavigationBarItem(selected=page==Screen.HOME,onClick={page=Screen.HOME;chosen=null},icon={Icon(Icons.Default.Home,null)},label={Text("الرئيسية")})
+   NavigationBarItem(selected=page==Screen.ADS||page==Screen.SHOPS,onClick={page=Screen.ADS;chosen=null},icon={Icon(Icons.Default.Search,null)},label={Text("تصفح")})
+   NavigationBarItem(selected=page==Screen.ADD,onClick={page=Screen.ADD;chosen=null},icon={Icon(Icons.Default.AddCircle,null)},label={Text("أضف")})
+   NavigationBarItem(selected=page==Screen.SAVED,onClick={page=Screen.SAVED;chosen=null},icon={Icon(Icons.Default.FavoriteBorder,null)},label={Text("المحفوظات")})
+   NavigationBarItem(selected=page==Screen.ACCOUNT,onClick={page=Screen.ACCOUNT;chosen=null},icon={Icon(Icons.Default.Person,null)},label={Text("حسابي")})
   }}){pad->
    Column(Modifier.fillMaxSize().padding(pad)){
     if(message.isNotBlank())Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically){Text(message,Modifier.weight(1f),color=Green);TextButton(onClick={message=""}){Text("إغلاق")}}
@@ -122,7 +122,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:
       item{Text("العملة")};item{Row{listOf("$","ل.س").forEach{FilterChip(adCurrency==it,{adCurrency=it},{Text(it)})}}}
       item{Text("نوع المحتوى")};item{Row{listOf("إعلان","طلب","خدمة","خصم").forEach{FilterChip(adKind==it,{adKind=it},{Text(it)})}}}
       item{Text("القسم")};item{Column{cats.forEach{FilterChip(adCat==it,{adCat=it},{Text(it)})}}}
-      item{Text("المنطقة")};item{Column{regions.forEach{FilterChip(adArea==it,{adArea=it},{Text(it)})}}}
+      item{Text("المنطقة")};item{Column{areas.forEach{FilterChip(adArea==it,{adArea=it},{Text(it)})}}}
       item{OutlinedButton(onClick={},enabled=false,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.AddPhotoAlternate,null);Text("إضافة صور - لاحقاً")}}
       item{Button(onClick={if(title.isBlank()||details.isBlank())message="اكتب العنوان والوصف أولاً." else{ads=listOf(Ad((ads.maxOfOrNull{it.id}?:0)+1,title,adCat,adArea,price.ifBlank{"0"},adCurrency,details,adKind,"mine"))+ads;title="";details="";price="";message="حُفظ محلياً فقط ولم يُنشر على الموقع.";page=Screen.MY_ADS}},modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Save,null);Text("حفظ للتجربة")}}
      }

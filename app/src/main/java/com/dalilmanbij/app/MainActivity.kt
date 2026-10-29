@@ -1,4 +1,6 @@
 package com.dalilmanbij.app
+
+// Isolated test prototype; not connected to production website.
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
